@@ -303,6 +303,9 @@ def render_kundli(chart: Dict, fc: Optional[Dict], lang: str, now_jd: float, loc
             a_, b_ = fmt_day(ph["start"], tz), fmt_day(ph["end"], tz)
             o.add(f"   {a_} -> {b_}: {tx[0]}", f"   {a_} -> {b_}: {tx[1]}", f"   {a_} -> {b_}: {HIN.SADE_SATI_TEXT_HI[ph['house']]}")
 
+    from .report_deep import render_deep
+    render_deep(o, chart)
+
     _title(o, "Numerology", "সংখ্যাতত্ত্ব", "अंक ज्योतिष")
     nu = chart["numerology"]
     for key, en_l, bn_l, hi_l in (("mulank", "Birth number (Mulank)", "মূলাঙ্ক", "मूलांक"),

@@ -30,6 +30,14 @@ The "published" dates above were taken from widely available panchang/almanac da
   of ayanamsa/Sun-longitude differences), Full Moon 1992-01-19 21:28 UT, Saturn retrograde turn on 2025-07-13.
 - Eclipses are not computed.
 
+## Deeper layers (v0.3)
+- Ashtakavarga: the benefit tables from Brihat Parashara Hora Shastra are checked by the classical totals
+  (Sun 48, Moon 49, Mars 39, Mercury 54, Jupiter 56, Venus 52, Saturn 39 = 337); tests fail if any table is off.
+- Divisional charts D1-D60 follow Parashara's rules; tests check the classical navamsa starts (fire=Aries, earth=Capricorn, air=Libra, water=Cancer),
+  hora, drekkana and trimsamsa boundaries. Some schools use different rules for a few charts (e.g. D60, D30 variants).
+- Jaimini karakas use the 7-karaka scheme (no Rahu). Remedies are traditional associations, not evidence.
+- Not yet included: Shadbala, Ashtakoota (Guna Milan) matching, Bhava Chalit, Arudha padas, Chara dasha, Yogini dasha.
+
 ## Expected error size
 | Body | Typical error |
 |---|---|

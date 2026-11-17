@@ -238,6 +238,23 @@ def kundli(date: str, time: str, place: Optional[str] = None, lat: Optional[floa
                            "meaning": {"en": D.NUMEROLOGY[v][1], "bn": D.NUMEROLOGY[v][2], "hi": HIN.NUMEROLOGY_HI[v]}}
                        for k, v in c["numerology"].items()},
     }
+    from . import deep as DP
+    from .report_deep import BHAVA, KARAKA, REMEDY, VARGA_NAME
+    da = DP.analyse(c)
+    out["divisional_charts"] = {f"D{n}": {"name": dict(zip(("en", "bn", "hi"), VARGA_NAME[n])), "lagna": _sign(v["lagna"]),
+                                          "planets": {g: _sign(sg) for g, sg in v["planets"].items()}} for n, v in da["vargas"].items()}
+    out["vargottama_planets"] = [_grah(g) for g in da["vargottama"]]
+    out["ashtakavarga"] = {"bhinna": {g: pts for g, pts in da["ashtakavarga"]["bav"].items()}, "sarva": da["ashtakavarga"]["sav"],
+                           "total": da["ashtakavarga"]["total"], "sign_order": "Mesha..Meena", "average_per_sign": 28}
+    out["jaimini_karakas"] = {k: {**_grah(g), "degree_in_sign": round(c["planets"][g]["degree"], 3),
+                                  "meaning": dict(zip(("en", "bn", "hi"), dict(KARAKA)[k]))} for k, g in da["karakas"].items()}
+    out["bhava_table"] = [{"house": r["house"], "sign": _sign(r["sign"]), "lord": _grah(r["lord"]), "lord_in_house": r["lord_house"],
+                           "occupants": [_grah(g) for g in r["occupants"]], "sarvashtakavarga_points": r["sav"],
+                           "signifies": dict(zip(("en", "bn", "hi"), BHAVA[r["house"] - 1]))} for r in da["house_lords"]]
+    out["traditional_remedies"] = {"note": "Traditional associations for reflection; no scientific evidence of effect.",
+                                   "by_planet": {g: {"gem": dict(zip(("en", "bn", "hi"), r[0])), "day": dict(zip(("en", "bn", "hi"), r[1])),
+                                                     "deity": dict(zip(("en", "bn", "hi"), r[2])), "mantra": dict(zip(("en", "bn", "hi"), r[3]))}
+                                                 for g, r in REMEDY.items()}}
     if years > 0:
         ms = c["moon_sign"]
         fc = TR.forecast(ms, njd, years)
