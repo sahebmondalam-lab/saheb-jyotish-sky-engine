@@ -84,6 +84,16 @@ def _title(o: Out, en: str, bn: str, hi: str) -> None:
     o.add(f"== {en} ==", f"== {bn} ==", f"== {hi} ==")
 
 
+def _notes(o: "Out", loc) -> None:
+    """Show assumptions made for this report (unknown time, approximate zone, out-of-range year...)."""
+    if not getattr(loc, "notes", None):
+        return
+    o.raw()
+    o.add("NOTES ON ASSUMPTIONS:", "ধরে নেওয়া বিষয়গুলো (সতর্কতা):", "मानी गई बातें (सावधानी):")
+    for n in loc.notes:
+        o.add("  * " + n, "  * " + n, "  * " + n)     # notes are written in English
+
+
 def _tithi_name(idx: int):
     n = idx % 15
     if n == 14:
@@ -144,6 +154,7 @@ def render_kundli(chart: Dict, fc: Optional[Dict], lang: str, now_jd: float, loc
           "कुंडली (वैदिक जन्म-पत्रिका)  |  साहेब ज्योतिष स्काई इंजन")
     o.add("Created by Saheb Mondal - CC BY-NC-SA 4.0", "নির্মাতা সাহেব মন্ডল - CC BY-NC-SA 4.0",
           "निर्माता साहेब मंडल (Saheb Mondal) - CC BY-NC-SA 4.0")
+    _notes(o, loc)
 
     _title(o, "Birth details", "জন্মের তথ্য", "जन्म विवरण")
     o.add(f"Name: {name}", f"নাম: {name}", f"नाम: {name}")
@@ -329,6 +340,7 @@ def render_panchang(d: date, loc: Location, lang: str) -> str:
     p = day_panchang(d, loc)
     o.add(f"PANCHANG for {d.isoformat()} - {loc.name}", f"পঞ্চাঙ্গ {d.isoformat()} - {loc.name}",
           f"पंचांग {d.isoformat()} - {loc.name}")
+    _notes(o, loc)
     o.add("(Tithi/nakshatra/yoga/karana are those running at local sunrise.)",
           "(তিথি/নক্ষত্র/যোগ/করণ স্থানীয় সূর্যোদয়ের সময়ের।)",
           "(तिथि/नक्षत्र/योग/करण स्थानीय सूर्योदय के समय के हैं।)")
@@ -398,6 +410,7 @@ def render_sky(local_dt: datetime, loc: Location, lang: str) -> str:
     o.add(f"UTC {utc.strftime('%Y-%m-%d %H:%M')}  |  Julian Day {jd:.5f}  |  Ayanamsa (Lahiri) {dms(ay)}",
           f"UTC {utc.strftime('%Y-%m-%d %H:%M')}  |  জুলিয়ান দিন {jd:.5f}  |  অয়নাংশ (লাহিড়ী) {dms(ay)}",
           f"UTC {utc.strftime('%Y-%m-%d %H:%M')}  |  जूलियन दिन {jd:.5f}  |  अयनांश (लाहिड़ी) {dms(ay)}")
+    _notes(o, loc)
 
     _title(o, "Planets: sidereal (Vedic) and tropical (Western) longitude", "গ্রহ: নিরয়ন (বৈদিক) ও সায়ন (পাশ্চাত্য) দ্রাঘিমা",
            "ग्रह: निरयण (वैदिक) और सायन (पाश्चात्य) देशांतर")
@@ -467,6 +480,7 @@ def render_day(d: date, loc: Location, lang: str) -> str:
 
     o.add(f"EVENTS IN THE SKY on {d.isoformat()} - {loc.name} (local time)", f"{d.isoformat()} তারিখের আকাশের ঘটনা - {loc.name} (স্থানীয় সময়)",
           f"{d.isoformat()} के आकाश की घटनाएँ - {loc.name} (स्थानीय समय)")
+    _notes(o, loc)
     _title(o, "Moon phase moments", "চাঁদের দশার মুহূর্ত", "चंद्र कला के क्षण")
     for e in ev["moon_phases"]:
         pe = PHASE_EVENT[e["phase_index"]]

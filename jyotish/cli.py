@@ -35,8 +35,8 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd")
 
     k = sub.add_parser("kundli", help="birth chart + panchang + dasha + forecast")
-    k.add_argument("--date", required=True, help="birth date YYYY-MM-DD (local)")
-    k.add_argument("--time", required=True, help="birth time HH:MM[:SS] (local, 24h)")
+    k.add_argument("--date", required=True, help="birth date, any common form: 1992-01-27, 27/01/1992, '27 Jan 1992', Bengali/Hindi digits")
+    k.add_argument("--time", default=None, help="birth time, any common form: 14:30, '2:30 PM', 'রাত ১০:৩০'; leave out if unknown")
     k.add_argument("--name", default="")
     k.add_argument("--years", type=float, default=5.0, help="forecast window in years (default 5, 0 = none)")
     k.add_argument("--now", help="pretend 'today' is this ISO date/time (UTC), for reproducible output")

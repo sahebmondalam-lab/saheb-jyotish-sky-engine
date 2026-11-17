@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Dict, List
 
 from . import deep
-from .data import PLANET, PLANET_ABBR, RASHI, RASHI_LORD
+from .data import NAKSHATRA as NAK, PLANET, PLANET_ABBR, RASHI, RASHI_LORD
 
 SIGN_ABBR = ["Mes", "Vri", "Mit", "Kar", "Sim", "Kan", "Tul", "Vrs", "Dha", "Mak", "Kum", "Mee"]
 
@@ -106,6 +106,24 @@ KARAKA = [
     ("GK", ("Gnatikaraka - rivals, relatives, obstacles", "জ্ঞাতিকারক - প্রতিদ্বন্দ্বী, আত্মীয়, বাধা", "ज्ञातिकारक - प्रतिद्वंद्वी, रिश्तेदार, बाधा")),
     ("DK", ("Darakaraka - spouse, partner", "দারকারক - জীবনসঙ্গী", "दारकारक - जीवनसाथी")),
 ]
+# Traditional name syllables (namakshar) of the 4 padas of each nakshatra: (Latin, Devanagari)
+NAMAKSHAR = [
+    ("Chu Che Cho La", "चु चे चो ला"), ("Li Lu Le Lo", "ली लू ले लो"), ("A I U E", "अ ई उ ए"), ("O Va Vi Vu", "ओ वा वी वू"),
+    ("Ve Vo Ka Ki", "वे वो का की"), ("Ku Gha Nga Chha", "कू घ ङ छ"), ("Ke Ko Ha Hi", "के को हा ही"), ("Hu He Ho Da", "हू हे हो डा"),
+    ("Di Du De Do", "डी डू डे डो"), ("Ma Mi Mu Me", "मा मी मू मे"), ("Mo Ta Ti Tu", "मो टा टी टू"), ("Te To Pa Pi", "टे टो पा पी"),
+    ("Pu Sha Na Tha", "पू ष ण ठ"), ("Pe Po Ra Ri", "पे पो रा री"), ("Ru Re Ro Ta", "रू रे रो ता"), ("Ti Tu Te To", "ती तू ते तो"),
+    ("Na Ni Nu Ne", "ना नी नू ने"), ("No Ya Yi Yu", "नो या यी यू"), ("Ye Yo Bha Bhi", "ये यो भा भी"), ("Bhu Dha Pha Dha", "भू धा फा ढा"),
+    ("Bhe Bho Ja Ji", "भे भो जा जी"), ("Khi Khu Khe Kho", "खी खू खे खो"), ("Ga Gi Gu Ge", "गा गी गू गे"), ("Go Sa Si Su", "गो सा सी सू"),
+    ("Se So Da Di", "से सो दा दी"), ("Du Tha Jha Ña", "दू थ झ ञ"), ("De Do Cha Chi", "दे दो चा ची"),
+]
+assert len(NAMAKSHAR) == 27
+
+
+def namakshar(nakshatra: int, pada: int) -> tuple:
+    """(Latin, Devanagari) name syllable for a nakshatra (0-26) and pada (1-4)."""
+    return tuple(x.split()[pada - 1] for x in NAMAKSHAR[nakshatra])
+
+
 VARGA_NAME = {1: ("Rashi", "রাশি", "राशि"), 2: ("Hora", "হোরা", "होरा"), 3: ("Drekkana", "দ্রেষ্কাণ", "द्रेष्काण"),
               4: ("Chaturthamsa", "চতুর্থাংশ", "चतुर्थांश"), 7: ("Saptamsa", "সপ্তমাংশ", "सप्तमांश"), 9: ("Navamsa", "নবমাংশ", "नवमांश"),
               10: ("Dasamsa", "দশমাংশ", "दशमांश"), 12: ("Dwadasamsa", "দ্বাদশাংশ", "द्वादशांश"), 16: ("Shodasamsa", "ষোড়শাংশ", "षोडशांश"),
@@ -129,6 +147,13 @@ def render_deep(o, chart: Dict) -> None:
     pl = chart["planets"]
     lag = chart["lagna"]["sign"]
     order = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu"]
+
+    mn = chart["planets"]["Moon"]
+    syl = namakshar(mn["nakshatra"], mn["pada"])
+    _title(o, "Name syllable (namakshar)", "নামাক্ষর", "नामाक्षर")
+    o.add(f"Birth Moon is in {nm(NAK[mn['nakshatra']])} pada {mn['pada']}: the traditional first syllable for the name is '{syl[0]}' (all four: {NAMAKSHAR[mn['nakshatra']][0]}).",
+          f"জন্মের চাঁদ {nm(NAK[mn['nakshatra']])} নক্ষত্রের {mn['pada']} পাদে: নামের ঐতিহ্যগত প্রথম অক্ষর '{syl[0]}' (চারটি: {NAMAKSHAR[mn['nakshatra']][0]})।",
+          f"जन्म का चंद्र {nm(NAK[mn['nakshatra']])} नक्षत्र के चरण {mn['pada']} में: नाम का परंपरागत पहला अक्षर '{syl[1]}' (चारों: {NAMAKSHAR[mn['nakshatra']][1]})।")
 
     _title(o, "Rashi chart (North-Indian style)", "রাশি ছক (উত্তর ভারতীয় ধরন)", "राशि कुंडली (उत्तर भारतीय शैली)")
     o.add("Houses are fixed; the number in a house is its sign (1 = Mesha ... 12 = Meena); * = Lagna house; (R) = retrograde.",

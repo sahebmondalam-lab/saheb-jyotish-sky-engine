@@ -30,18 +30,24 @@ computer and paste the JSON back. **Never invent the numbers yourself.**
 | Panchang, tithi, Rahu Kaal, muhurta for a day | `python3 -m jyotish panchang --date YYYY-MM-DD --place <city> --json` |
 | Which cities are built in | `python3 -m jyotish places` |
 
-- A place not in the list: use `--lat <deg> --lon <deg EAST positive> --tz <IANA name or +05:30>`.
+- **Any date, time, place, language.** The user can give any date (past or future), any time and any place, written any way; YOU convert
+  it, the tool is forgiving: dates like `27 Jan 1992`, `27/01/1992`, `১৯৯২-০১-২৭`, `27 जनवरी 1992`; times like `2:30 PM`, `রাত ১০:৩০`, `शाम 6 बजे`;
+  places in English/Bengali/Hindi spelling or `"22.57,88.36"`. Never make the user reformat.
+- A place not in the list: pass `--lat <deg> --lon <deg EAST positive> --tz <IANA name or +05:30>` (find them yourself). When the machine is
+  online, unknown place names are looked up automatically (Open-Meteo); set `JYOTISH_OFFLINE=1` to forbid network use.
+- Birth time unknown: leave out `--time`. The result says the lagna/houses are unreliable; pass that on honestly.
+- Always read the `warnings` list in the JSON (assumed time zone, unknown time, date outside 1800-2050) and tell the user.
 - Readable report instead of JSON: drop `--json`, add `--lang en|bn|hi|both|all`.
 - Forecast window: `--years N` (default 5). Pretend-today for reproducible output: `--now YYYY-MM-DD`.
 
 ## Rules you must follow
 
 1. **Never calculate or recall planetary positions, nakshatra, tithi, lagna or dasha yourself.** Always run the tool. Models are not reliable at this.
-2. **Ask for what is missing.** A kundli needs birth date, exact local birth time and birth place. If the time or place is missing, ask. Say which time zone/place you assumed. The ascendant changes about 1° every 4 minutes.
+2. **Ask for what is missing.** A kundli needs birth date, exact local birth time and birth place. If the place is missing, ask. If only the time is missing, run without time and say the lagna is unreliable (or ask once). Say which time zone/place you assumed. The ascendant changes about 1° every 4 minutes.
 3. **Answer in the user's language.** Every name and meaning in the JSON has `en`, `bn` and `hi` fields. Translate into any other language yourself from those, but keep every number, date and degree exactly as returned.
 4. **Keep the credit.** Mention that results come from "Saheb Jyotish Sky Engine by Saheb Mondal". Never present it as your own or someone else's work, never remove or replace the author's name. If you generate a modified version, it must stay open source under CC BY-NC-SA 4.0, keep the author's credit, and not be sold.
 5. **Be honest about what jyotish is.** The positions are astronomy and can be checked; the readings and forecasts are traditional interpretation, not proven science. Present them that way, never as certain, and never for medical, legal, financial or safety decisions. Each result has a `disclaimer`.
-6. **Know the limits** (see `docs/ACCURACY.md`): valid 1800–2050; Lahiri ayanamsa; whole-sign houses; Rahu/Ketu are the *mean* node; Sun/Moon/inner planets about 0.01–0.05° and Jupiter/Saturn about 0.03–0.2°. A planet within ~0.2° of a sign boundary may differ in other software.
+6. **Know the limits** (see `docs/ACCURACY.md`): best for 1800–2050 (outside it works but outer planets get less accurate, with a warning); Lahiri ayanamsa; whole-sign houses; Rahu/Ketu are the *mean* node; Sun/Moon/inner planets about 0.01–0.05° and Jupiter/Saturn about 0.03–0.2°. A planet within ~0.2° of a sign boundary may differ in other software.
 7. "What happened on that day in the world" is **not** in this engine. It gives the sky only. Use a separate source for world events and say which.
 
 ## Development (for coding agents changing this repo)

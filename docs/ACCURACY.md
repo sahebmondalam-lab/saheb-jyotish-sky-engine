@@ -38,6 +38,15 @@ The "published" dates above were taken from widely available panchang/almanac da
 - Jaimini karakas use the 7-karaka scheme (no Rahu). Remedies are traditional associations, not evidence.
 - Not yet included: Shadbala, Ashtakoota (Guna Milan) matching, Bhava Chalit, Arudha padas, Chara dasha, Yogini dasha.
 
+## Input handling (v0.3)
+- Dates/times are parsed in many spellings (English/Bengali/Hindi digits and words); an ambiguous `03/04/2001` is read day-first and a note says so.
+- Unknown place names are looked up online through Open-Meteo when the machine has internet. This path is tested only with a mocked
+  response (the author's sandbox had no internet), so please try it once and report problems. Set `JYOTISH_OFFLINE=1` to disable it.
+- Unknown time zone: India is assumed for places in India, otherwise a longitude-based offset is used and a warning says daylight saving
+  and history are ignored. Give an IANA zone for exact results.
+- Unknown birth time: noon is used and the lagna/houses are flagged unreliable.
+- Years outside 1800-2050 work (1300 and 2100 are tested) but carry a warning: Moon/Sun/tithi stay good, outer planets can be off by degrees.
+
 ## Expected error size
 | Body | Typical error |
 |---|---|

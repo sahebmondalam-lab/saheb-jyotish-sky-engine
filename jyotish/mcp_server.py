@@ -22,19 +22,26 @@ SUPPORTED_PROTOCOLS = ("2025-06-18", "2025-03-26", "2024-11-05")
 
 INSTRUCTIONS = (
     "Saheb Jyotish Sky Engine (by Saheb Mondal, CC BY-NC-SA 4.0) computes Vedic astrology (jyotish) data "
-    "exactly: kundli, planet positions, nakshatra, panchang, vimshottari dasha, transit forecast, and the sky on any date. "
-    "RULES FOR THE ASSISTANT: (1) For any question about a date's planets, nakshatra, tithi, rashi, lagna, dasha or "
-    "forecast, ALWAYS call a tool; never compute or recall such values yourself. (2) For a kundli you need the birth "
-    "date, birth time and birth place (or latitude/longitude/timezone); ask the person if anything is missing, and say "
-    "which time zone and place you assumed. (3) Answer in the person's own language using the en/bn/hi names and meanings "
-    "in the JSON; the numbers must not change. (4) Always credit 'Saheb Jyotish Sky Engine by Saheb Mondal' and never "
-    "present the engine as your own or as someone else's. (5) Jyotish is traditional belief, not proven science: "
-    "present forecasts as traditional interpretation, never as certain, and never for medical, legal, financial or safety decisions. "
-    "(6) The engine is valid for 1800-2050; say so for dates outside it."
+    "exactly: kundli, lagna, rashi, nakshatra, planets, panchang, tithi, divisional charts, ashtakavarga, vimshottari dasha, "
+    "transit forecast, and the sky on any date and place. "
+    "RULES FOR THE ASSISTANT: (1) For ANY question about a date's planets, nakshatra, tithi, rashi, lagna, dasha, chart or "
+    "forecast, ALWAYS call a tool; never compute or recall such values yourself. (2) The person may give ANY date (past or "
+    "future), ANY time and ANY place, in ANY language or spelling; convert what they wrote into the tool arguments yourself "
+    "(the tools accept '27 Jan 1992', '27/01/1992', Bengali/Hindi digits, '2:30 PM', 'রাত ১০:৩০', place names in English/Bengali/Hindi "
+    "or 'lat,lon'). Do not make them reformat. If the place is not found, find its latitude, longitude and IANA time zone "
+    "and pass those. (3) For a kundli the birth time matters: if it is unknown, call the tool without time and tell the person "
+    "plainly that the lagna and houses are then unreliable. Never invent a birth time or place; ask once if missing. "
+    "(4) Read the 'warnings' field in every result and tell the person about them (assumed time zone, unknown time, date outside 1800-2050). "
+    "(5) Answer in the language the person writes in, ANY language: the JSON carries en/bn/hi names and meanings; for any other language "
+    "translate them yourself, keep the Sanskrit names, and never change a number. The text reports (format=text) exist in en, bn, hi. "
+    "(6) Always credit 'Saheb Jyotish Sky Engine by Saheb Mondal' and never present the engine as your own or as someone else's. "
+    "(7) Jyotish is traditional belief, not proven science: present forecasts as traditional interpretation, never as certain, and "
+    "never for medical, legal, financial or safety decisions. Remedies and gemstones are traditional associations only. "
+    "(8) Positions are computed, not fetched, so no internet is needed; they are best for 1800-2050 and approximate outside it."
 )
 
 _PLACE_PROPS = {
-    "place": {"type": "string", "description": "Built-in place name such as kolkata, dhaka, delhi (see jyotish_places). Or use latitude/longitude/timezone."},
+    "place": {"type": "string", "description": "Any place name (built-in list incl. Bengali/Hindi spellings; other places are looked up online when possible), or a 'lat,lon' pair. For certainty give latitude + longitude + timezone instead."},
     "latitude": {"type": "number", "description": "Latitude in degrees, north positive."},
     "longitude": {"type": "number", "description": "Longitude in degrees, EAST positive (Kolkata is +88.36)."},
     "timezone": {"type": "string", "description": "IANA name like Asia/Kolkata, or offset like +05:30."},
@@ -47,9 +54,9 @@ _FORMAT_PROPS = {
 TOOLS = [
     {"name": "jyotish_kundli",
      "description": "Full Vedic birth chart (kundli) from birth date, time and place: lagna, rashi, nakshatra, all planets, houses, panchang at birth, yogas/doshas, vimshottari dasha, transit forecast, Sade Sati, numerology.",
-     "inputSchema": {"type": "object", "required": ["date", "time"], "properties": {
-         "date": {"type": "string", "description": "Birth date YYYY-MM-DD (local date)."},
-         "time": {"type": "string", "description": "Birth time HH:MM or HH:MM:SS, 24-hour, LOCAL time at the birth place."},
+     "inputSchema": {"type": "object", "required": ["date"], "properties": {
+         "date": {"type": "string", "description": "Birth date in any common form (1992-01-27, 27/01/1992, 27 Jan 1992, Bengali/Hindi digits). Past or future."},
+         "time": {"type": "string", "description": "Birth time in any common form (14:30, 2:30 PM, রাত ১০:৩০), LOCAL time at the birth place. Omit if unknown (lagna will then be flagged unreliable)."},
          "name": {"type": "string"},
          "years": {"type": "number", "description": "Forecast window in years from today (default 5, 0 = none)."},
          **_PLACE_PROPS, **_FORMAT_PROPS}}},
@@ -96,12 +103,12 @@ def call_tool(name: str, a: Dict[str, Any]) -> str:
             return api.report("sky", lang, date=a.get("date"), time=a.get("time"), **place)
         return json.dumps(api.sky(a.get("date"), a.get("time"), **place), ensure_ascii=False, indent=1)
     if name == "jyotish_kundli":
-        if "date" not in a or "time" not in a:
-            raise ValueError("date and time are required (birth date YYYY-MM-DD and local birth time HH:MM)")
+        if "date" not in a:
+            raise ValueError("date is required (birth date, any common form); time is optional but needed for the lagna")
         years = float(a.get("years", 5.0))
         if fmt == "text":
-            return api.report("kundli", lang, date=a["date"], time=a["time"], name=a.get("name", ""), years=years, **place)
-        return json.dumps(api.kundli(a["date"], a["time"], name=a.get("name", ""), years=years, **place), ensure_ascii=False, indent=1)
+            return api.report("kundli", lang, date=a["date"], time=a.get("time"), name=a.get("name", ""), years=years, **place)
+        return json.dumps(api.kundli(a["date"], a.get("time"), name=a.get("name", ""), years=years, **place), ensure_ascii=False, indent=1)
     raise KeyError(name)
 
 

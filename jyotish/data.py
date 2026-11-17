@@ -257,3 +257,53 @@ PLACES = {
 # Moon-phase moments (elongation 0 / 90 / 180 / 270 degrees), used by the day-events report
 PHASE_EVENT = [("New Moon (Amavasya)", "অমাবস্যা (নতুন চাঁদ)"), ("First Quarter Moon", "শুক্লপক্ষের অর্ধচন্দ্র (প্রথম চতুর্থাংশ)"),
                ("Full Moon (Purnima)", "পূর্ণিমা"), ("Last Quarter Moon", "কৃষ্ণপক্ষের অর্ধচন্দ্র (শেষ চতুর্থাংশ)")]
+
+
+_IST = "Asia/Kolkata"
+PLACES.update({
+    # India
+    "chennai": (13.0827, 80.2707, _IST), "surat": (21.1702, 72.8311, _IST), "kanpur": (26.4499, 80.3319, _IST),
+    "agra": (27.1767, 78.0081, _IST), "nagpur": (21.1458, 79.0882, _IST), "indore": (22.7196, 75.8577, _IST),
+    "bhopal": (23.2599, 77.4126, _IST), "ranchi": (23.3441, 85.3096, _IST), "raipur": (21.2514, 81.6296, _IST),
+    "chandigarh": (30.7333, 76.7794, _IST), "amritsar": (31.6340, 74.8723, _IST), "kochi": (9.9312, 76.2673, _IST),
+    "thiruvananthapuram": (8.5241, 76.9366, _IST), "dehradun": (30.3165, 78.0322, _IST), "shimla": (31.1048, 77.1734, _IST),
+    "srinagar": (34.0837, 74.7973, _IST), "imphal": (24.8170, 93.9368, _IST), "shillong": (25.5788, 91.8933, _IST),
+    "gangtok": (27.3389, 88.6065, _IST), "puducherry": (11.9416, 79.8083, _IST), "visakhapatnam": (17.6868, 83.2185, _IST),
+    "coimbatore": (11.0168, 76.9558, _IST), "madurai": (9.9252, 78.1198, _IST), "mysuru": (12.2958, 76.6394, _IST),
+    "jamshedpur": (22.8046, 86.2029, _IST), "dhanbad": (23.7957, 86.4304, _IST), "cuttack": (20.4625, 85.8830, _IST),
+    "kharagpur": (22.3460, 87.2320, _IST), "baharampur": (24.1048, 88.2517, _IST), "malda": (25.0108, 88.1411, _IST),
+    "cooch behar": (26.3452, 89.4482, _IST), "jalpaiguri": (26.5167, 88.7333, _IST), "darjeeling": (27.0410, 88.2663, _IST),
+    "bardhaman": (23.2324, 87.8615, _IST), "krishnanagar": (23.4058, 88.4850, _IST),
+    # South Asia
+    "khulna": (22.8456, 89.5403, "Asia/Dhaka"), "rajshahi": (24.3745, 88.6042, "Asia/Dhaka"), "sylhet": (24.8949, 91.8687, "Asia/Dhaka"),
+    "colombo": (6.9271, 79.8612, _IST), "karachi": (24.8607, 67.0011, "Asia/Karachi"), "lahore": (31.5497, 74.3436, "Asia/Karachi"),
+    "islamabad": (33.6844, 73.0479, "Asia/Karachi"),
+    # world
+    "singapore": (1.3521, 103.8198, "Asia/Singapore"), "kuala lumpur": (3.1390, 101.6869, "Asia/Kuala_Lumpur"),
+    "dubai": (25.2048, 55.2708, "Asia/Dubai"), "riyadh": (24.7136, 46.6753, "Asia/Riyadh"), "doha": (25.2854, 51.5310, "Asia/Qatar"),
+    "bangkok": (13.7563, 100.5018, "Asia/Bangkok"), "tokyo": (35.6762, 139.6503, "Asia/Tokyo"),
+    "beijing": (39.9042, 116.4074, "Asia/Shanghai"), "shanghai": (31.2304, 121.4737, "Asia/Shanghai"),
+    "hong kong": (22.3193, 114.1694, "Asia/Hong_Kong"), "sydney": (-33.8688, 151.2093, "Australia/Sydney"),
+    "melbourne": (-37.8136, 144.9631, "Australia/Melbourne"), "auckland": (-36.8485, 174.7633, "Pacific/Auckland"),
+    "paris": (48.8566, 2.3522, "Europe/Paris"), "berlin": (52.5200, 13.4050, "Europe/Berlin"), "rome": (41.9028, 12.4964, "Europe/Rome"),
+    "madrid": (40.4168, -3.7038, "Europe/Madrid"), "moscow": (55.7558, 37.6173, "Europe/Moscow"), "istanbul": (41.0082, 28.9784, "Europe/Istanbul"),
+    "cairo": (30.0444, 31.2357, "Africa/Cairo"), "nairobi": (-1.2921, 36.8219, "Africa/Nairobi"),
+    "johannesburg": (-26.2041, 28.0473, "Africa/Johannesburg"), "lagos": (6.5244, 3.3792, "Africa/Lagos"),
+    "toronto": (43.6532, -79.3832, "America/Toronto"), "chicago": (41.8781, -87.6298, "America/Chicago"),
+    "los angeles": (34.0522, -118.2437, "America/Los_Angeles"), "san francisco": (37.7749, -122.4194, "America/Los_Angeles"),
+    "houston": (29.7604, -95.3698, "America/Chicago"), "mexico city": (19.4326, -99.1332, "America/Mexico_City"),
+    "sao paulo": (-23.5505, -46.6333, "America/Sao_Paulo"), "buenos aires": (-34.6037, -58.3816, "America/Argentina/Buenos_Aires"),
+})
+# alternative spellings, old names, and Bengali / Hindi names
+PLACE_ALIASES = {
+    "calcutta": "kolkata", "কলকাতা": "kolkata", "कोलकाता": "kolkata", "bombay": "mumbai", "মুম্বই": "mumbai", "মুম্বাই": "mumbai", "मुंबई": "mumbai",
+    "madras": "chennai", "চেন্নাই": "chennai", "चेन्नई": "chennai", "bangalore": "bengaluru", "बेंगलुरु": "bengaluru", "বেঙ্গালুরু": "bengaluru",
+    "new delhi": "delhi", "দিল্লি": "delhi", "দিল্লী": "delhi", "दिल्ली": "delhi", "benares": "varanasi", "banaras": "varanasi", "काशी": "varanasi",
+    "वाराणसी": "varanasi", "বারাণসী": "varanasi", "dacca": "dhaka", "ঢাকা": "dhaka", "ढाका": "dhaka", "chattogram": "chittagong", "চট্টগ্রাম": "chittagong",
+    "trivandrum": "thiruvananthapuram", "cochin": "kochi", "mysore": "mysuru", "vizag": "visakhapatnam", "pondicherry": "puducherry",
+    "শিলিগুড়ি": "siliguri", "হাওড়া": "howrah", "দুর্গাপুর": "durgapur", "আসানসোল": "asansol", "লখনউ": "lucknow", "लखनऊ": "lucknow", "जयपुर": "jaipur",
+    "पटना": "patna", "পাটনা": "patna", "गुवाहाटी": "guwahati", "গুয়াহাটি": "guwahati", "कानपुर": "kanpur", "आगरा": "agra", "भोपाल": "bhopal",
+    "इंदौर": "indore", "नागपुर": "nagpur", "पुणे": "pune", "হায়দরাবাদ": "hyderabad", "हैदराबाद": "hyderabad", "কাঠমান্ডু": "kathmandu", "काठमांडू": "kathmandu",
+    "বর্ধমান": "bardhaman", "burdwan": "bardhaman", "কৃষ্ণনগর": "krishnanagar", "দার্জিলিং": "darjeeling", "মালদা": "malda", "english bazar": "malda",
+    "kolkata, india": "kolkata", "nyc": "new york", "new york city": "new york", "ny": "new york", "la": "los angeles", "sf": "san francisco",
+}

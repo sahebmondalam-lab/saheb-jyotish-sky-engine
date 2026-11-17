@@ -16,6 +16,7 @@ from . import data_hi as HIN
 from . import transits as TR
 from .chart import build_chart
 from .location import Location, make_local_datetime, resolve_location
+from .parse import is_unknown_time, parse_date, range_note
 from .panchang import day_panchang, panchang_at, day_times
 from .report import render_kundli, render_panchang, render_sky, render_day, _tithi_name, _karana_name
 
@@ -61,6 +62,27 @@ def _iso(jd: Optional[float], tz) -> Optional[str]:
 
 def _day(jd: float, tz) -> str:
     return A.datetime_from_jd(jd).astimezone(tz).strftime("%Y-%m-%d")
+
+
+UNKNOWN_TIME_NOTE = ("Birth time not known: 12:00 noon was used. The lagna (ascendant), houses, divisional charts and the exact Moon "
+                     "position can be wrong (the Moon moves about 13 degrees in a day, so even the nakshatra and dasha start can shift). "
+                     "Sun sign, planet signs (except the Moon near a sign edge) and slow-planet transits are still fine.")
+
+
+def _prep(loc: Location, year: int, unknown_time: bool = False) -> Location:
+    """Record assumptions (date range, unknown time) on the location so every output can show them."""
+    for n in (range_note(year), UNKNOWN_TIME_NOTE if unknown_time else None):
+        if n and n not in loc.notes:
+            loc.notes.append(n)
+    return loc
+
+
+def _warnings(loc: Location) -> Dict:
+    return {"warnings": list(loc.notes)} if loc.notes else {}
+
+
+def _today(loc: Location):
+    return datetime.now(timezone.utc).astimezone(loc.tz).date()
 
 
 def now_jd(now: Optional[str] = None) -> float:
@@ -114,8 +136,9 @@ def sky(date: Optional[str] = None, time: Optional[str] = None, place: Optional[
     if date is None and time is None:
         local_dt = datetime.now(timezone.utc).astimezone(loc.tz)
     else:
-        d = date or datetime.now(timezone.utc).astimezone(loc.tz).date().isoformat()
+        d = date or _today(loc).isoformat()
         local_dt = make_local_datetime(d, time or "12:00", loc)
+    _prep(loc, local_dt.year)
     utc = local_dt.astimezone(timezone.utc)
     jd = A.julian_day(utc)
     pos = A.all_positions(jd)
@@ -134,16 +157,18 @@ def sky(date: Optional[str] = None, time: Optional[str] = None, place: Optional[
             "when_utc": utc.strftime("%Y-%m-%dT%H:%M:%SZ"), "julian_day_ut": round(jd, 6), "place": _loc_block(loc),
             "ayanamsa_lahiri_deg": round(A.ayanamsa_lahiri(A.jd_to_tt(jd)), 5), "planets": pl,
             "panchang": _panchang_block(pc, loc.tz), "day_times": _times_block(times, loc.tz),
-            "accuracy_note": "Sun/Moon/inner planets ~0.01-0.05 deg, Jupiter/Saturn ~0.03-0.2 deg, mean lunar node. Valid 1800-2050."}
+            "accuracy_note": "Sun/Moon/inner planets ~0.01-0.05 deg, Jupiter/Saturn ~0.03-0.2 deg, mean lunar node. Best for 1800-2050.",
+            **_warnings(loc)}
 
 
 def panchang(date: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None,
              lon: Optional[float] = None, tz: Optional[str] = None) -> Dict:
     loc = resolve_location(place, lat, lon, tz)
-    d = _date.fromisoformat(date) if date else datetime.now(timezone.utc).astimezone(loc.tz).date()
+    d = parse_date(date, loc.notes) if date else _today(loc)
+    _prep(loc, d.year)
     p = day_panchang(d, loc)
     return {"credit": credit_block(), "kind": "panchang", "date": d.isoformat(), "place": _loc_block(loc),
-            "note": "Tithi/nakshatra/yoga/karana are those running at local sunrise.",
+            "note": "Tithi/nakshatra/yoga/karana are those running at local sunrise.", **_warnings(loc),
             "vara": {**_n(D.VARA[p["vara_index"]]), "lord": _grah(D.VARA_LORD[p["vara_index"]])},
             "panchang": _panchang_block(p, loc.tz), "day_times": _times_block(p, loc.tz)}
 
@@ -153,14 +178,15 @@ def day_events(date: Optional[str] = None, place: Optional[str] = None, lat: Opt
     """Moon-phase moments, sign changes (sankranti), retrograde/direct turns and tithi/nakshatra/yoga timeline for one local day."""
     from .events import day_events as _ev
     loc = resolve_location(place, lat, lon, tz)
-    d = _date.fromisoformat(date) if date else datetime.now(timezone.utc).astimezone(loc.tz).date()
+    d = parse_date(date, loc.notes) if date else _today(loc)
+    _prep(loc, d.year)
     e = _ev(d, loc)
     z = loc.tz
 
     def seg(x, namer):
         return {**namer(x["index"]), "starts": _iso(x["start"], z), "ends": _iso(x["end"], z)}
     return {"credit": credit_block(), "kind": "day_events", "date": d.isoformat(), "place": _loc_block(loc),
-            "not_included": "eclipses (Moon latitude not computed)",
+            "not_included": "eclipses (Moon latitude not computed)", **_warnings(loc),
             "moon_phases": [{**_n(D.PHASE_EVENT[x["phase_index"]]), "at": _iso(x["jd"], z)} for x in e["moon_phases"]],
             "sign_changes": [{"planet": _grah(x["planet"]), "from": _sign(x["from_sign"]), "to": _sign(x["to_sign"]),
                               "at": _iso(x["jd"], z), "is_sankranti": x["planet"] == "Sun"} for x in e["ingresses"]],
@@ -170,10 +196,12 @@ def day_events(date: Optional[str] = None, place: Optional[str] = None, lat: Opt
             "yoga": [seg(x, lambda i: _n(D.YOGA[i])) for x in e["yoga"]]}
 
 
-def kundli(date: str, time: str, place: Optional[str] = None, lat: Optional[float] = None, lon: Optional[float] = None,
+def kundli(date: str, time: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None, lon: Optional[float] = None,
            tz: Optional[str] = None, name: str = "", years: float = 5.0, now: Optional[str] = None) -> Dict:
     loc = resolve_location(place, lat, lon, tz)
-    local_dt = make_local_datetime(date, time, loc)
+    unknown = is_unknown_time(time)
+    local_dt = make_local_datetime(date, "12:00" if unknown else time, loc)
+    _prep(loc, local_dt.year, unknown)
     c = build_chart(local_dt, loc, name)
     tzo = loc.tz
     njd = now_jd(now)
@@ -214,7 +242,7 @@ def kundli(date: str, time: str, place: Optional[str] = None, lat: Optional[floa
         for p in periods for a in p["antar"] if a["end"] > njd and a["start"] < horizon]
 
     out = {
-        "credit": credit_block(), "kind": "kundli",
+        "credit": credit_block(), "kind": "kundli", **_warnings(loc), "birth_time_known": not unknown,
         "input": {"name": name, "local_time": meta["local_time"], "utc_time": meta["utc_time"], "place": _loc_block(loc),
                   "house_system": "whole sign", "ayanamsa": meta["ayanamsa_system"], "ayanamsa_deg": round(meta["ayanamsa"], 5),
                   "as_of_for_dasha_and_forecast": A.datetime_from_jd(njd).strftime("%Y-%m-%d")},
@@ -239,10 +267,14 @@ def kundli(date: str, time: str, place: Optional[str] = None, lat: Optional[floa
                        for k, v in c["numerology"].items()},
     }
     from . import deep as DP
-    from .report_deep import BHAVA, KARAKA, REMEDY, VARGA_NAME
+    from .report_deep import BHAVA, KARAKA, NAMAKSHAR, REMEDY, VARGA_NAME, namakshar
     da = DP.analyse(c)
     out["divisional_charts"] = {f"D{n}": {"name": dict(zip(("en", "bn", "hi"), VARGA_NAME[n])), "lagna": _sign(v["lagna"]),
                                           "planets": {g: _sign(sg) for g, sg in v["planets"].items()}} for n, v in da["vargas"].items()}
+    mo = c["planets"]["Moon"]
+    out["name_syllable"] = {"pada_syllable": dict(zip(("latin", "devanagari"), namakshar(mo["nakshatra"], mo["pada"]))),
+                            "all_four": dict(zip(("latin", "devanagari"), NAMAKSHAR[mo["nakshatra"]])),
+                            "note": "Traditional first syllable for naming the child, from the Moon's nakshatra pada."}
     out["vargottama_planets"] = [_grah(g) for g in da["vargottama"]]
     out["ashtakavarga"] = {"bhinna": {g: pts for g, pts in da["ashtakavarga"]["bav"].items()}, "sarva": da["ashtakavarga"]["sav"],
                            "total": da["ashtakavarga"]["total"], "sign_order": "Mesha..Meena", "average_per_sign": 28}
@@ -279,20 +311,25 @@ def report(kind: str, lang: str = "both", **kw) -> str:
     """Readable text report. kind: 'kundli' | 'panchang' | 'sky' | 'day'. lang: en|bn|hi|both|all."""
     loc = resolve_location(kw.get("place"), kw.get("lat"), kw.get("lon"), kw.get("tz"))
     if kind == "panchang":
-        d = _date.fromisoformat(kw["date"]) if kw.get("date") else datetime.now(timezone.utc).astimezone(loc.tz).date()
+        d = parse_date(kw["date"], loc.notes) if kw.get("date") else _today(loc)
+        _prep(loc, d.year)
         return render_panchang(d, loc, lang)
     if kind == "sky":
         if kw.get("date") is None and kw.get("time") is None:
             dt = datetime.now(timezone.utc).astimezone(loc.tz)
         else:
-            d = kw.get("date") or datetime.now(timezone.utc).astimezone(loc.tz).date().isoformat()
+            d = kw.get("date") or _today(loc).isoformat()
             dt = make_local_datetime(d, kw.get("time") or "12:00", loc)
+        _prep(loc, dt.year)
         return render_sky(dt, loc, lang)
     if kind == "day":
-        d = _date.fromisoformat(kw["date"]) if kw.get("date") else datetime.now(timezone.utc).astimezone(loc.tz).date()
+        d = parse_date(kw["date"], loc.notes) if kw.get("date") else _today(loc)
+        _prep(loc, d.year)
         return render_day(d, loc, lang)
     if kind == "kundli":
-        local_dt = make_local_datetime(kw["date"], kw["time"], loc)
+        unknown = is_unknown_time(kw.get("time"))
+        local_dt = make_local_datetime(kw["date"], "12:00" if unknown else kw["time"], loc)
+        _prep(loc, local_dt.year, unknown)
         c = build_chart(local_dt, loc, kw.get("name", ""))
         njd = now_jd(kw.get("now"))
         years = float(kw.get("years", 5.0))
