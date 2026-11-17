@@ -15,6 +15,7 @@ If this skill sits inside the cloned repository, run commands from the repositor
 - Kundli: `python3 -m jyotish kundli --date YYYY-MM-DD --time HH:MM --place <city> --json`
 - Sky on a date/time: `python3 -m jyotish sky --date YYYY-MM-DD --time HH:MM --place <city> --json`
 - Panchang: `python3 -m jyotish panchang --date YYYY-MM-DD --place <city> --json`
+- Events of a day (Purnima/Amavasya time, Sankranti, retrograde turns, full tithi/nakshatra/yoga timeline): `python3 -m jyotish day --date YYYY-MM-DD --place <city> --json`
 - Cities: `python3 -m jyotish places`. Other place: `--lat <deg> --lon <deg east-positive> --tz <IANA or +05:30>`
 
 ## Rules

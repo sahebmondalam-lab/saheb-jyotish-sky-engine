@@ -17,7 +17,7 @@ from . import transits as TR
 from .chart import build_chart
 from .location import Location, make_local_datetime, resolve_location
 from .panchang import day_panchang, panchang_at, day_times
-from .report import render_kundli, render_panchang, render_sky, _tithi_name, _karana_name
+from .report import render_kundli, render_panchang, render_sky, render_day, _tithi_name, _karana_name
 
 PROJECT = "Saheb Jyotish Sky Engine"
 AUTHOR = "Saheb Mondal"
@@ -76,9 +76,12 @@ def _panchang_block(pc: Dict, tz) -> Dict:
     tn, kn = _tithi_name(pc["tithi_index"]), _karana_name(pc["karana_index"])
     return {
         "tithi": {"number_in_month": pc["tithi_number"], "paksha": {"key": pc["paksha"], **_n(D.PAKSHA[pc["paksha"]])},
-                  **_n(tn), "percent_elapsed": round(pc["tithi_percent_elapsed"], 1), "ends": _iso(pc.get("tithi_end_jd"), tz)},
-        "nakshatra": {**_nak(pc["nakshatra_index"]), "pada": pc["nakshatra_pada"], "ends": _iso(pc.get("nakshatra_end_jd"), tz)},
-        "yoga": {**_n(D.YOGA[pc["yoga_index"]]), "ends": _iso(pc.get("yoga_end_jd"), tz)},
+                  **_n(tn), "percent_elapsed": round(pc["tithi_percent_elapsed"], 1), "ends": _iso(pc.get("tithi_end_jd"), tz),
+                  "next": _n(_tithi_name((pc["tithi_index"] + 1) % 30))},
+        "nakshatra": {**_nak(pc["nakshatra_index"]), "pada": pc["nakshatra_pada"], "ends": _iso(pc.get("nakshatra_end_jd"), tz),
+                      "next": _nak((pc["nakshatra_index"] + 1) % 27)},
+        "yoga": {**_n(D.YOGA[pc["yoga_index"]]), "ends": _iso(pc.get("yoga_end_jd"), tz),
+                 "next": _n(D.YOGA[(pc["yoga_index"] + 1) % 27])},
         "karana": _n(kn),
         "moon_sign": _sign(pc["moon_sign"]),
         "sun_sign": _sign(pc["sun_sign"]),
@@ -143,6 +146,28 @@ def panchang(date: Optional[str] = None, place: Optional[str] = None, lat: Optio
             "note": "Tithi/nakshatra/yoga/karana are those running at local sunrise.",
             "vara": {**_n(D.VARA[p["vara_index"]]), "lord": _grah(D.VARA_LORD[p["vara_index"]])},
             "panchang": _panchang_block(p, loc.tz), "day_times": _times_block(p, loc.tz)}
+
+
+def day_events(date: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None,
+               lon: Optional[float] = None, tz: Optional[str] = None) -> Dict:
+    """Moon-phase moments, sign changes (sankranti), retrograde/direct turns and tithi/nakshatra/yoga timeline for one local day."""
+    from .events import day_events as _ev
+    loc = resolve_location(place, lat, lon, tz)
+    d = _date.fromisoformat(date) if date else datetime.now(timezone.utc).astimezone(loc.tz).date()
+    e = _ev(d, loc)
+    z = loc.tz
+
+    def seg(x, namer):
+        return {**namer(x["index"]), "starts": _iso(x["start"], z), "ends": _iso(x["end"], z)}
+    return {"credit": credit_block(), "kind": "day_events", "date": d.isoformat(), "place": _loc_block(loc),
+            "not_included": "eclipses (Moon latitude not computed)",
+            "moon_phases": [{**_n(D.PHASE_EVENT[x["phase_index"]]), "at": _iso(x["jd"], z)} for x in e["moon_phases"]],
+            "sign_changes": [{"planet": _grah(x["planet"]), "from": _sign(x["from_sign"]), "to": _sign(x["to_sign"]),
+                              "at": _iso(x["jd"], z), "is_sankranti": x["planet"] == "Sun"} for x in e["ingresses"]],
+            "stations": [{"planet": _grah(x["planet"]), "turns": x["turns"], "at": _iso(x["jd"], z)} for x in e["stations"]],
+            "tithi": [seg(x, lambda i: _n(_tithi_name(i))) for x in e["tithi"]],
+            "nakshatra": [seg(x, _nak) for x in e["nakshatra"]],
+            "yoga": [seg(x, lambda i: _n(D.YOGA[i])) for x in e["yoga"]]}
 
 
 def kundli(date: str, time: str, place: Optional[str] = None, lat: Optional[float] = None, lon: Optional[float] = None,
@@ -234,7 +259,7 @@ def kundli(date: str, time: str, place: Optional[str] = None, lat: Optional[floa
 
 
 def report(kind: str, lang: str = "both", **kw) -> str:
-    """Readable text report. kind: 'kundli' | 'panchang' | 'sky'. lang: en|bn|hi|both|all."""
+    """Readable text report. kind: 'kundli' | 'panchang' | 'sky' | 'day'. lang: en|bn|hi|both|all."""
     loc = resolve_location(kw.get("place"), kw.get("lat"), kw.get("lon"), kw.get("tz"))
     if kind == "panchang":
         d = _date.fromisoformat(kw["date"]) if kw.get("date") else datetime.now(timezone.utc).astimezone(loc.tz).date()
@@ -246,6 +271,9 @@ def report(kind: str, lang: str = "both", **kw) -> str:
             d = kw.get("date") or datetime.now(timezone.utc).astimezone(loc.tz).date().isoformat()
             dt = make_local_datetime(d, kw.get("time") or "12:00", loc)
         return render_sky(dt, loc, lang)
+    if kind == "day":
+        d = _date.fromisoformat(kw["date"]) if kw.get("date") else datetime.now(timezone.utc).astimezone(loc.tz).date()
+        return render_day(d, loc, lang)
     if kind == "kundli":
         local_dt = make_local_datetime(kw["date"], kw["time"], loc)
         c = build_chart(local_dt, loc, kw.get("name", ""))
@@ -253,4 +281,4 @@ def report(kind: str, lang: str = "both", **kw) -> str:
         years = float(kw.get("years", 5.0))
         fc = TR.forecast(c["moon_sign"], njd, years) if years > 0 else None
         return render_kundli(c, fc, lang, njd, loc)
-    raise ValueError("kind must be kundli, panchang or sky")
+    raise ValueError("kind must be kundli, panchang, sky or day")

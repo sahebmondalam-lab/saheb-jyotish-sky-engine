@@ -25,6 +25,7 @@ computer and paste the JSON back. **Never invent the numbers yourself.**
 |---|---|
 | Birth chart / rashi / nakshatra / dasha / forecast for a person | `python3 -m jyotish kundli --date YYYY-MM-DD --time HH:MM --place <city> --json` |
 | What was/is the sky on a date (planets, nakshatra, moon phase, what the day was like) | `python3 -m jyotish sky --date YYYY-MM-DD --time HH:MM --place <city> --json` |
+| "What happened in the sky on <date>": Purnima/Amavasya moment, Sankranti, retrograde/direct turns, tithi/nakshatra/yoga start-end times | `python3 -m jyotish day --date YYYY-MM-DD --place <city> --json` |
 | Panchang, tithi, Rahu Kaal, muhurta for a day | `python3 -m jyotish panchang --date YYYY-MM-DD --place <city> --json` |
 | Which cities are built in | `python3 -m jyotish places` |
 

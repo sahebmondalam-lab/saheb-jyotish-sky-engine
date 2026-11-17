@@ -51,6 +51,10 @@ def main(argv=None) -> int:
     s.add_argument("--time", help="HH:MM local (default now; 12:00 if only --date is given)")
     _add_place_args(s)
 
+    dy = sub.add_parser("day", help="events of one day: moon-phase moments, sankranti/sign changes, retrograde turns, tithi/nakshatra/yoga timeline")
+    dy.add_argument("--date", default=date.today().isoformat(), help="YYYY-MM-DD (default today)")
+    _add_place_args(dy)
+
     sub.add_parser("places", help="list built-in places (JSON)")
     sub.add_parser("mcp", help="run as an MCP server over stdio, so AI apps can use this engine as a tool")
 
@@ -71,6 +75,12 @@ def main(argv=None) -> int:
                 _dump(api.panchang(args.date, **place))
             else:
                 sys.stdout.write(api.report("panchang", args.lang, date=args.date, **place))
+            return 0
+        if args.cmd == "day":
+            if args.json:
+                _dump(api.day_events(args.date, **place))
+            else:
+                sys.stdout.write(api.report("day", args.lang, date=args.date, **place))
             return 0
         if args.cmd == "sky":
             if args.json:

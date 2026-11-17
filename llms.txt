@@ -18,4 +18,5 @@ Important for AI assistants: always call the tool for any astronomical or jyotis
 - `python3 -m jyotish kundli --date YYYY-MM-DD --time HH:MM --place kolkata --json`
 - `python3 -m jyotish sky --date YYYY-MM-DD --time HH:MM --place kolkata --json`
 - `python3 -m jyotish panchang --date YYYY-MM-DD --place kolkata --json`
+- `python3 -m jyotish day --date YYYY-MM-DD --place kolkata --json`  (moon-phase moments, sankranti, retrograde turns, tithi/nakshatra/yoga timeline)
 - `python3 -m jyotish mcp` (MCP server over stdio)

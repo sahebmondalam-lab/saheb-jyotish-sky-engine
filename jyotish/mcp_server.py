@@ -62,6 +62,10 @@ TOOLS = [
      "inputSchema": {"type": "object", "properties": {"date": {"type": "string", "description": "YYYY-MM-DD, default today."},
                                                       "time": {"type": "string", "description": "HH:MM local; default now (or 12:00 if only a date is given)."},
                                                       **_PLACE_PROPS, **_FORMAT_PROPS}}},
+    {"name": "jyotish_day_events",
+     "description": "Everything that happens in the sky on one local day: exact moments of New/Full/Quarter Moon, sign changes of all grahas (Sun's = Sankranti), retrograde/direct turns, and the full tithi, nakshatra and yoga timeline with start and end times. Use for 'what happened in the sky on that date'. Eclipses are not included.",
+     "inputSchema": {"type": "object", "properties": {"date": {"type": "string", "description": "YYYY-MM-DD, default today."},
+                                                      **_PLACE_PROPS, **_FORMAT_PROPS}}},
     {"name": "jyotish_places",
      "description": "List the built-in places with latitude, longitude and timezone.",
      "inputSchema": {"type": "object", "properties": {}}},
@@ -83,6 +87,10 @@ def call_tool(name: str, a: Dict[str, Any]) -> str:
         if fmt == "text":
             return api.report("panchang", lang, date=a.get("date"), **place)
         return json.dumps(api.panchang(a.get("date"), **place), ensure_ascii=False, indent=1)
+    if name == "jyotish_day_events":
+        if fmt == "text":
+            return api.report("day", lang, date=a.get("date"), **place)
+        return json.dumps(api.day_events(a.get("date"), **place), ensure_ascii=False, indent=1)
     if name == "jyotish_sky":
         if fmt == "text":
             return api.report("sky", lang, date=a.get("date"), time=a.get("time"), **place)

@@ -43,6 +43,8 @@ python3 -m jyotish sky --date 2026-11-16 --time 10:00 --place kolkata --lang hi
 
 # Panchang for a day
 python3 -m jyotish panchang --date 2026-11-16 --place kolkata --lang en
+# everything that happens in the sky on one day: Purnima/Amavasya moments, Sankranti, retrograde turns, tithi/nakshatra/yoga timeline
+python3 -m jyotish day --date 1992-01-27 --place kolkata --lang all
 
 # Any place on Earth: latitude, longitude (EAST positive), timezone
 python3 -m jyotish kundli --date 1990-01-05 --time 06:10 --lat 23.81 --lon 90.41 --tz Asia/Dhaka --lang bn

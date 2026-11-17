@@ -334,13 +334,17 @@ def render_panchang(d: date, loc: Location, lang: str) -> str:
     pk = PAKSHA[p["paksha"]]
     te, ne, ye = fmt_jd(p.get("tithi_end_jd"), tz), fmt_jd(p.get("nakshatra_end_jd"), tz), fmt_jd(p.get("yoga_end_jd"), tz)
     o.add(f"Vara: {nm(VARA[p['vara_index']])}", f"বার: {nm(VARA[p['vara_index']])}", f"वार: {nm(VARA[p['vara_index']])}")
-    o.add(f"Tithi: {nm(tn)} - {nm(pk)}  (until {te})", f"তিথি: {nm(tn)} - {nm(pk)}  (শেষ {te})", f"तिथि: {nm(tn)} - {nm(pk)}  (तक {te})")
+    tn2 = _tithi_name((p["tithi_index"] + 1) % 30)
+    o.add(f"Tithi: {nm(tn)} - {nm(pk)}  (until {te}, then {nm(tn2)})", f"তিথি: {nm(tn)} - {nm(pk)}  (শেষ {te}, তারপর {nm(tn2)})",
+          f"तिथि: {nm(tn)} - {nm(pk)}  (तक {te}, फिर {nm(tn2)})")
     nk = NAKSHATRA[p["nakshatra_index"]]
-    o.add(f"Nakshatra: {nm(nk)} pada {p['nakshatra_pada']}  (until {ne})",
-          f"নক্ষত্র: {nm(nk)} পাদ {p['nakshatra_pada']}  (শেষ {ne})",
-          f"नक्षत्र: {nm(nk)} चरण {p['nakshatra_pada']}  (तक {ne})")
+    nk2 = NAKSHATRA[(p["nakshatra_index"] + 1) % 27]
+    o.add(f"Nakshatra: {nm(nk)} pada {p['nakshatra_pada']}  (until {ne}, then {nm(nk2)})",
+          f"নক্ষত্র: {nm(nk)} পাদ {p['nakshatra_pada']}  (শেষ {ne}, তারপর {nm(nk2)})",
+          f"नक्षत्र: {nm(nk)} चरण {p['nakshatra_pada']}  (तक {ne}, फिर {nm(nk2)})")
     yg = YOGA[p["yoga_index"]]
-    o.add(f"Yoga: {nm(yg)}  (until {ye})", f"যোগ: {nm(yg)}  (শেষ {ye})", f"योग: {nm(yg)}  (तक {ye})")
+    yg2 = YOGA[(p["yoga_index"] + 1) % 27]
+    o.add(f"Yoga: {nm(yg)}  (until {ye}, then {nm(yg2)})", f"যোগ: {nm(yg)}  (শেষ {ye}, তারপর {nm(yg2)})", f"योग: {nm(yg)}  (तक {ye}, फिर {nm(yg2)})")
     kr = _karana_name(p["karana_index"])
     o.add(f"Karana: {nm(kr)}", f"করণ: {nm(kr)}", f"करण: {nm(kr)}")
     o.add(f"Moon in {nm(RASHI[p['moon_sign']])}, Sun in {nm(RASHI[p['sun_sign']])} (sidereal)",
@@ -434,6 +438,67 @@ def render_sky(local_dt: datetime, loc: Location, lang: str) -> str:
     else:
         o.add("Sun does not rise/set on this date at this latitude.", "এই অক্ষাংশে এই তারিখে সূর্য ওঠে/অস্ত যায় না।",
               "इस अक्षांश पर इस तारीख को सूर्य उदय/अस्त नहीं होता।")
+    o.raw()
+    _disclaimer(o)
+    o.raw()
+    _credit(o)
+    return o.text()
+
+
+def render_day(d: date, loc: Location, lang: str) -> str:
+    """Everything that changes in the sky during one local civil day (00:00-24:00)."""
+    from .events import day_events
+    o = Out(lang)
+    nm = o.nm
+    tz = loc.tz
+    ev = day_events(d, loc)
+
+    def hm(jd):
+        if jd is None:
+            return "-"
+        dt = A.datetime_from_jd(jd).astimezone(tz)
+        return dt.strftime("%H:%M") if dt.date() == d else dt.strftime("%m-%d %H:%M")
+
+    def none():
+        o.add("none today", "আজ নেই", "आज कोई नहीं")
+
+    o.add(f"EVENTS IN THE SKY on {d.isoformat()} - {loc.name} (local time)", f"{d.isoformat()} তারিখের আকাশের ঘটনা - {loc.name} (স্থানীয় সময়)",
+          f"{d.isoformat()} के आकाश की घटनाएँ - {loc.name} (स्थानीय समय)")
+    _title(o, "Moon phase moments", "চাঁদের দশার মুহূর্ত", "चंद्र कला के क्षण")
+    for e in ev["moon_phases"]:
+        pe = PHASE_EVENT[e["phase_index"]]
+        o.add(f"{hm(e['jd'])}  {nm(pe)}")
+    if not ev["moon_phases"]:
+        none()
+    _title(o, "Sign changes (sidereal)", "রাশি পরিবর্তন (নিরয়ন)", "राशि परिवर्तन (निरयण)")
+    for e in ev["ingresses"]:
+        sun = e["planet"] == "Sun"
+        o.add(f"{hm(e['jd'])}  {nm(PLANET[e['planet']])}: {nm(RASHI[e['from_sign']])} -> {nm(RASHI[e['to_sign']])}" + ("  = SANKRANTI" if sun else ""),
+              f"{hm(e['jd'])}  {nm(PLANET[e['planet']])}: {nm(RASHI[e['from_sign']])} -> {nm(RASHI[e['to_sign']])}" + ("  = সংক্রান্তি" if sun else ""),
+              f"{hm(e['jd'])}  {nm(PLANET[e['planet']])}: {nm(RASHI[e['from_sign']])} -> {nm(RASHI[e['to_sign']])}" + ("  = संक्रांति" if sun else ""))
+    if not ev["ingresses"]:
+        none()
+    _title(o, "Retrograde / direct turns", "বক্রী / মার্গী পরিবর্তন", "वक्री / मार्गी परिवर्तन")
+    for e in ev["stations"]:
+        pl, r = nm(PLANET[e["planet"]]), e["turns"] == "retrograde"
+        o.add(f"{hm(e['jd'])}  {pl} turns {'retrograde' if r else 'direct'}", f"{hm(e['jd'])}  {pl} {'বক্রী' if r else 'মার্গী'} হয়",
+              f"{hm(e['jd'])}  {pl} {'वक्री' if r else 'मार्गी'} होता है")
+    if not ev["stations"]:
+        none()
+
+    def seg(title, rows, name):
+        _title(o, *title)
+        for e in rows:
+            n = nm(name(e["index"]))
+            a, b = hm(e["start"]), hm(e["end"])
+            o.add(f"{n}: {a} to {b}", f"{n}: {a} থেকে {b}", f"{n}: {a} से {b}")
+
+    seg(("Tithi through the day", "দিনভর তিথি", "दिन भर तिथि"), ev["tithi"], _tithi_name)
+    seg(("Nakshatra through the day", "দিনভর নক্ষত্র", "दिन भर नक्षत्र"), ev["nakshatra"], lambda i: NAKSHATRA[i])
+    seg(("Yoga through the day", "দিনভর যোগ", "दिन भर योग"), ev["yoga"], lambda i: YOGA[i])
+    o.raw()
+    o.add("Not included: eclipses (this engine does not compute the Moon's latitude).", "অন্তর্ভুক্ত নয়: গ্রহণ (এই ইঞ্জিন চাঁদের অক্ষাংশ হিসাব করে না)।",
+          "शामिल नहीं: ग्रहण (यह इंजन चंद्रमा का अक्षांश नहीं निकालता)।")
     o.raw()
     _disclaimer(o)
     o.raw()

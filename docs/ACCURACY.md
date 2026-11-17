@@ -18,6 +18,18 @@ The "published" dates above were taken from widely available panchang/almanac da
 - Dates before 1800 or after 2050 (the JPL element table is only valid for 1800-2050; outside that
   range errors grow).
 
+## Spot check: 27 January 1992, Kolkata (done by the author's AI assistant, cross-checked with independent public sources)
+- Tithi/nakshatra: engine gives Krishna Ashtami until 09:08 IST then Navami; Swati until 11:35 IST then Vishakha.
+  vedicmarga.com lists Ashtami/Swati for the sunrise moment; appliedjyotish.com lists Navami/Vishakha (it uses the later-in-day tithi).
+  Both agree with the timeline; sites differ only in *which moment of the day* they quote.
+- New/Full Moon moments (moonblink.info, UT) matched to within about a minute.
+- Planet longitudes at 00:00 GMT vs the ephemeris on signsbystars.com: Sun +0.003, Mercury +0.014, Venus -0.001, Mars +0.010,
+  Jupiter -0.054, Saturn -0.056, Rahu +0.008 degrees (worst 0.056 deg).
+- Kolkata sunrise 06:17 / sunset 17:20 looks right but was NOT independently verified.
+- Other day-events checks (tests/test_events.py): Makar Sankranti 2026 (engine 15:02 IST, published about 15:13: ~11 min apart because
+  of ayanamsa/Sun-longitude differences), Full Moon 1992-01-19 21:28 UT, Saturn retrograde turn on 2025-07-13.
+- Eclipses are not computed.
+
 ## Expected error size
 | Body | Typical error |
 |---|---|

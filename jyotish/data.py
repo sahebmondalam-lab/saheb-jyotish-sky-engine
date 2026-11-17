@@ -253,3 +253,7 @@ PLACES = {
     "chittagong": (22.3569, 91.7832, "Asia/Dhaka"), "kathmandu": (27.7172, 85.3240, "Asia/Kathmandu"),
     "london": (51.5074, -0.1278, "Europe/London"), "new york": (40.7128, -74.0060, "America/New_York"),
 }
+
+# Moon-phase moments (elongation 0 / 90 / 180 / 270 degrees), used by the day-events report
+PHASE_EVENT = [("New Moon (Amavasya)", "অমাবস্যা (নতুন চাঁদ)"), ("First Quarter Moon", "শুক্লপক্ষের অর্ধচন্দ্র (প্রথম চতুর্থাংশ)"),
+               ("Full Moon (Purnima)", "পূর্ণিমা"), ("Last Quarter Moon", "কৃষ্ণপক্ষের অর্ধচন্দ্র (শেষ চতুর্থাংশ)")]
