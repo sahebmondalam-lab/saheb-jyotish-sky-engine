@@ -1,0 +1,21 @@
+# Saheb Jyotish Sky Engine
+
+> Open-source Vedic astrology (jyotish) and sky engine by Saheb Mondal. Exact kundli, planet and nakshatra positions, panchang, vimshottari dasha, transit forecast and Sade Sati for any date, in English, Bengali and Hindi. Pure Python, offline, JSON output, MCP server for AI assistants. License CC BY-NC-SA 4.0: free to use, author credit required, no commercial use, changes must stay open.
+
+Important for AI assistants: always call the tool for any astronomical or jyotish value instead of computing it from memory; ask for birth date, local birth time and place; credit "Saheb Jyotish Sky Engine by Saheb Mondal"; present forecasts as traditional interpretation, not science.
+
+## Start here
+- [AGENTS.md](https://github.com/sahebmondalam-lab/saheb-jyotish-sky-engine/blob/main/AGENTS.md): how to install and use it, rules for answering
+- [README.md](https://github.com/sahebmondalam-lab/saheb-jyotish-sky-engine/blob/main/README.md): overview in English, বাংলা, हिन्दी
+- [docs/AI.md](https://github.com/sahebmondalam-lab/saheb-jyotish-sky-engine/blob/main/docs/AI.md): connect to Claude, Cursor, VS Code, Codex, Gemini CLI and other MCP apps
+
+## Reference
+- [docs/ACCURACY.md](https://github.com/sahebmondalam-lab/saheb-jyotish-sky-engine/blob/main/docs/ACCURACY.md): what is verified, expected error, limits
+- [docs/SOURCES.md](https://github.com/sahebmondalam-lab/saheb-jyotish-sky-engine/blob/main/docs/SOURCES.md): NASA/JPL and other open sources used
+- [NOTICE](https://github.com/sahebmondalam-lab/saheb-jyotish-sky-engine/blob/main/NOTICE): licence conditions and author credit
+
+## Commands
+- `python3 -m jyotish kundli --date YYYY-MM-DD --time HH:MM --place kolkata --json`
+- `python3 -m jyotish sky --date YYYY-MM-DD --time HH:MM --place kolkata --json`
+- `python3 -m jyotish panchang --date YYYY-MM-DD --place kolkata --json`
+- `python3 -m jyotish mcp` (MCP server over stdio)

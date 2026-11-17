@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "saheb-jyotish-sky-engine"
+version = "0.2.0"
+description = "Open Vedic astrology (Jyotish) + sky engine: kundli, panchang, dasha, forecast. English, Bengali, Hindi. MCP server for AI assistants. By Saheb Mondal."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Saheb Mondal" }]
+license = { text = "CC-BY-NC-SA-4.0" }
+dependencies = ["tzdata; platform_system == 'Windows'"]
+keywords = ["jyotish", "vedic astrology", "panchang", "kundli", "ephemeris", "mcp"]
+classifiers = [
+  "License :: Other/Proprietary License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Astronomy",
+  "Natural Language :: Bengali",
+  "Natural Language :: Hindi",
+  "Natural Language :: English",
+]
+
+[project.urls]
+Repository = "https://github.com/sahebmondalam-lab/saheb-jyotish-sky-engine"
+
+[project.scripts]
+jyotish = "jyotish.cli:main"
+jyotish-mcp = "jyotish.mcp_server:serve"
+
+[tool.setuptools]
+packages = ["jyotish"]

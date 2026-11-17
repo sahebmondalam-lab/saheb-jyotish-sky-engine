@@ -1,0 +1,47 @@
+Saheb Jyotish Sky Engine / সাহেব জ্যোতিষ স্কাই ইঞ্জিন
+Copyright (c) 2026 Saheb Mondal (সাহেব মন্ডল). All rights reserved except as licensed below.
+
+Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International licence (CC BY-NC-SA 4.0). Full text: see the LICENSE file.
+
+THE CONDITIONS, IN SHORT
+1. Author credit - The original author "Saheb Mondal" and the project name
+                   "Saheb Jyotish Sky Engine" must be kept, in this order of
+                   prominence, in: the AUTHORS file, this NOTICE, the README, the
+                   copyright line at the top of every source file, and the output
+                   of any program, API or AI tool that uses this code (the report
+                   credit line and the "credit" field of JSON output).
+                   Nobody may remove the author's name or put their own name in
+                   its place, or present this work as theirs.
+2. Open          - If you change, extend, or build on this work, you must release
+                   your version, with its source, under the same licence
+                   (CC BY-NC-SA 4.0).
+3. No sale       - You may not use this work or your changes for commercial
+                   purposes (selling it, putting it behind a paywall, or using it
+                   in a paid product or service).
+4. No endorsement- You must not suggest that Saheb Mondal endorses your version.
+   Do not publish a modified version under the original name; state clearly that
+   it is a modified version and what you changed.
+   (You may add your own name as "modified by" for your changes only.)
+
+If someone removes the credit or breaks these conditions, the licence for that
+person ends under section 6 of the licence, and the author may ask the hosting
+platform to take the copy down.
+
+NOTE: The licence covers the code, text and data tables written for this project.
+The underlying published algorithms and constants (JPL Keplerian elements, Meeus
+series, etc.) belong to their authors; see docs/SOURCES.md.
+
+সংক্ষেপে শর্ত
+১. লেখকের নাম - মূল লেখক "সাহেব মন্ডল" ও প্রজেক্টের নাম AUTHORS, NOTICE, README, প্রতিটি সোর্স ফাইলের
+   মাথায় কপিরাইট লাইন, এবং এই কোড ব্যবহারকারী প্রতিটি প্রোগ্রাম, API বা AI টুলের আউটপুটে
+   (রিপোর্টের ক্রেডিট লাইন ও JSON-এর "credit" ফিল্ড) রাখতে হবে। লেখকের নাম মুছে নিজের নাম বসানো বা
+   এটাকে নিজের কাজ বলে দেখানো যাবে না।
+২. ওপেন - পরিবর্তন বা সম্প্রসারণ করলে একই লাইসেন্সে (CC BY-NC-SA 4.0) সোর্স-সহ প্রকাশ করতে হবে।
+৩. বিক্রি নয় - এটি বা এর পরিবর্তিত রূপ দিয়ে টাকা কামানো যাবে না।
+৪. সমর্থন দাবি নয় - সাহেব মন্ডলের সমর্থন আছে এমন ইঙ্গিত দেওয়া যাবে না। পরিবর্তিত সংস্করণ মূল নামে
+   প্রকাশ করবেন না, স্পষ্ট লিখুন এটি পরিবর্তিত সংস্করণ ও কী বদলেছেন। (নিজের পরিবর্তনের জন্য "modified by"
+   হিসেবে নিজের নাম যোগ করতে পারেন।)
+
+কেউ ক্রেডিট মুছলে বা শর্ত ভাঙলে লাইসেন্সের ৬ নম্বর ধারা অনুযায়ী তার ব্যবহারের অধিকার চলে যায়,
+এবং লেখক হোস্টিং প্ল্যাটফর্মকে ওই কপি সরিয়ে দিতে বলতে পারেন।

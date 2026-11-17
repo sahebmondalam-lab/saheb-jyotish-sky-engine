@@ -1,0 +1,93 @@
+# Saheb Jyotish Sky Engine - Copyright (c) Saheb Mondal
+# Licensed under CC BY-NC-SA 4.0 (see LICENSE and NOTICE). Credit to "Saheb Mondal" must be kept.
+"""Command line: python -m jyotish kundli|panchang|sky|places|mcp ..."""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import date
+
+from . import api
+from .report import LANGS
+
+
+def _add_place_args(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--place", help="built-in place name, e.g. kolkata, dhaka, delhi (see: jyotish places)")
+    p.add_argument("--lat", type=float, help="latitude, north positive")
+    p.add_argument("--lon", type=float, help="longitude, EAST positive")
+    p.add_argument("--tz", help="IANA timezone (Asia/Kolkata) or offset (+05:30)")
+    p.add_argument("--lang", choices=LANGS, default="both",
+                   help="en | bn | hi | both (en+bn, default) | all (en+bn+hi)")
+    p.add_argument("--json", action="store_true", help="machine-readable JSON (for programs and AI assistants)")
+
+
+def _dump(obj) -> None:
+    json.dump(obj, sys.stdout, ensure_ascii=False, indent=2)
+    sys.stdout.write("\n")
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(
+        prog="jyotish",
+        description="Saheb Jyotish Sky Engine / সাহেব জ্যোতিষ স্কাই ইঞ্জিন / साहेब ज्योतिष स्काई इंजन "
+                    "- created by Saheb Mondal (CC BY-NC-SA 4.0)")
+    sub = ap.add_subparsers(dest="cmd")
+
+    k = sub.add_parser("kundli", help="birth chart + panchang + dasha + forecast")
+    k.add_argument("--date", required=True, help="birth date YYYY-MM-DD (local)")
+    k.add_argument("--time", required=True, help="birth time HH:MM[:SS] (local, 24h)")
+    k.add_argument("--name", default="")
+    k.add_argument("--years", type=float, default=5.0, help="forecast window in years (default 5, 0 = none)")
+    k.add_argument("--now", help="pretend 'today' is this ISO date/time (UTC), for reproducible output")
+    _add_place_args(k)
+
+    p = sub.add_parser("panchang", help="panchang for a day")
+    p.add_argument("--date", default=date.today().isoformat(), help="YYYY-MM-DD (default today)")
+    _add_place_args(p)
+
+    s = sub.add_parser("sky", help="the sky at one moment: all planets, nakshatra, moon phase, panchang")
+    s.add_argument("--date", help="YYYY-MM-DD (default today)")
+    s.add_argument("--time", help="HH:MM local (default now; 12:00 if only --date is given)")
+    _add_place_args(s)
+
+    sub.add_parser("places", help="list built-in places (JSON)")
+    sub.add_parser("mcp", help="run as an MCP server over stdio, so AI apps can use this engine as a tool")
+
+    args = ap.parse_args(argv)
+    if args.cmd is None:
+        ap.print_help()
+        return 2
+    try:
+        if args.cmd == "places":
+            _dump(api.places())
+            return 0
+        if args.cmd == "mcp":
+            from .mcp_server import serve
+            return serve()
+        place = dict(place=args.place, lat=args.lat, lon=args.lon, tz=args.tz)
+        if args.cmd == "panchang":
+            if args.json:
+                _dump(api.panchang(args.date, **place))
+            else:
+                sys.stdout.write(api.report("panchang", args.lang, date=args.date, **place))
+            return 0
+        if args.cmd == "sky":
+            if args.json:
+                _dump(api.sky(args.date, args.time, **place))
+            else:
+                sys.stdout.write(api.report("sky", args.lang, date=args.date, time=args.time, **place))
+            return 0
+        if args.json:
+            _dump(api.kundli(args.date, args.time, name=args.name, years=args.years, now=args.now, **place))
+        else:
+            sys.stdout.write(api.report("kundli", args.lang, date=args.date, time=args.time, name=args.name,
+                                        years=args.years, now=args.now, **place))
+        return 0
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below and keep the credit to Saheb Mondal."
+title: "Saheb Jyotish Sky Engine"
+type: software
+authors:
+  - family-names: "Mondal"
+    given-names: "Saheb"
+repository-code: "https://github.com/sahebmondalam-lab/saheb-jyotish-sky-engine"
+license: CC-BY-NC-SA-4.0
+version: 0.2.0
+date-released: 2026-11-16
+abstract: >-
+  Open-source Vedic astrology (Jyotish) and sky engine: planets, nakshatra, kundli,
+  panchang, Vimshottari dasha and transit forecast, in English, Bengali and Hindi.
+keywords:
+  - jyotish
+  - vedic astrology
+  - panchang
+  - kundli
+  - ephemeris
