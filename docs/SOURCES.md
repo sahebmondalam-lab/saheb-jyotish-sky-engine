@@ -19,3 +19,11 @@ Everything here is computed locally from published, open algorithms. No network 
 Interpretation texts (rashi, nakshatra, dasha, yoga meanings) are short summaries of widely known
 traditional ideas, written for this project in English and Bengali.
 ব্যাখ্যার লেখাগুলো ঐতিহ্যগত ধারণার সংক্ষিপ্ত সারাংশ, এই প্রজেক্টের জন্য ইংরেজি ও বাংলায় লেখা।
+
+## Added for years 1-9999 (v0.3)
+
+- Planets outside 1800-2050: JPL Table 2a (3000 BC-3000 AD) of the same Standish paper, including its b, c, s, f terms for Jupiter and Saturn.
+- Delta-T for years 1-1800: Espenak & Meeus polynomials (NASA GSFC, *Five Millennium Canon of Solar Eclipses*).
+- Past-sky cross-check of the Sun: Meeus, *Astronomical Algorithms*, ch. 27 equinox formulas (independent of the planetary tables).
+- Julian/Gregorian conversion: Julian Day Number algorithms (Fliegel & Van Flandern; Meeus ch. 7).
+- Name syllables (namakshar), Ashtakavarga tables, divisional-chart rules: classical Parashari texts (Brihat Parashara Hora Shastra), checked by tests.

@@ -5,7 +5,7 @@ Pure-Python astronomy core (no third-party packages needed).
 
 Algorithms and data used (all published, open):
   * Sun & inner planets & Jupiter/Saturn : JPL "Keplerian Elements for Approximate
-    Positions of the Major Planets" (E.M. Standish, Table 1, valid 1800-2050 AD).
+    Positions of the Major Planets" (E.M. Standish): Table 1 for 1800-2050 AD, Table 2a (3000 BC-3000 AD) elsewhere.
   * Moon : Jean Meeus, "Astronomical Algorithms" 2nd ed., chapter 47 (59 longitude terms).
   * Mean lunar node (Rahu) : Meeus chapter 47.
   * Delta-T : Espenak & Meeus polynomial expressions (NASA GSFC).
@@ -45,45 +45,54 @@ def cosd(x: float) -> float:
 
 # ----------------------------------------------------------------- time
 def julian_day(dt_utc: datetime) -> float:
-    """Julian Day (UT) from an aware or naive-UTC datetime (Gregorian calendar)."""
+    """Julian Day (UT) from an aware or naive-UTC datetime (proleptic Gregorian calendar, years 1-9999)."""
+    from .calendars import jdn_gregorian
     if dt_utc.tzinfo is not None:
         dt_utc = dt_utc.astimezone(timezone.utc)
-    y, m = dt_utc.year, dt_utc.month
-    day = dt_utc.day + (dt_utc.hour + (dt_utc.minute + (dt_utc.second + dt_utc.microsecond / 1e6) / 60.0) / 60.0) / 24.0
-    if m <= 2:
-        y -= 1
-        m += 12
-    a = y // 100
-    b = 2 - a + a // 4
-    return int(365.25 * (y + 4716)) + int(30.6001 * (m + 1)) + day + b - 1524.5
+    frac = (dt_utc.hour + (dt_utc.minute + (dt_utc.second + dt_utc.microsecond / 1e6) / 60.0) / 60.0) / 24.0
+    return jdn_gregorian(dt_utc.year, dt_utc.month, dt_utc.day) - 0.5 + frac
 
 
 def datetime_from_jd(jd: float) -> datetime:
-    """Aware UTC datetime from Julian Day (UT). Meeus ch.7."""
-    jd = jd + 0.5
-    z = int(math.floor(jd))
-    f = jd - z
-    if z < 2299161:
-        a = z
-    else:
-        alpha = int((z - 1867216.25) / 36524.25)
-        a = z + 1 + alpha - alpha // 4
-    b = a + 1524
-    c = int((b - 122.1) / 365.25)
-    d = int(365.25 * c)
-    e = int((b - d) / 30.6001)
-    day_frac = b - d - int(30.6001 * e) + f
-    day = int(day_frac)
-    month = e - 1 if e < 14 else e - 13
-    year = c - 4716 if month > 2 else c - 4715
-    secs = (day_frac - day) * 86400.0
-    base = datetime(year, month, day, tzinfo=timezone.utc)
-    return base + timedelta(seconds=round(secs))
+    """Aware UTC datetime (proleptic Gregorian) from Julian Day (UT)."""
+    from .calendars import gregorian_from_jdn
+    x = jd + 0.5
+    z = int(math.floor(x))
+    y, m, d = gregorian_from_jdn(z)
+    secs = (x - z) * 86400.0
+    return datetime(y, m, d, tzinfo=timezone.utc) + timedelta(seconds=round(secs))
+
+
+def format_jd(jd: float, tz=None, fmt: str = "%Y-%m-%d %H:%M") -> str:
+    """Format a Julian Day as local time. Outside Python's year 1-9999 limit it falls back to UTC text with astronomical year numbers."""
+    try:
+        dt = datetime_from_jd(jd)
+        return (dt.astimezone(tz) if tz is not None else dt).strftime(fmt)
+    except (ValueError, OverflowError):
+        from .calendars import gregorian_from_jdn
+        x = jd + 0.5
+        z = int(math.floor(x))
+        y, m, d = gregorian_from_jdn(z)
+        sec = int((x - z) * 86400)
+        txt = f"{y:04d}-{m:02d}-{d:02d} {sec // 3600:02d}:{sec % 3600 // 60:02d}"
+        return txt[:10] if fmt == "%Y-%m-%d" else txt
 
 
 def delta_t(year: float) -> float:
     """TT - UT in seconds (Espenak & Meeus, NASA GSFC polynomials)."""
     y = year
+    if y < 500:
+        u = y / 100.0
+        return 10583.6 - 1014.41 * u + 33.78311 * u**2 - 5.952053 * u**3 - 0.1798452 * u**4 + 0.022174192 * u**5 + 0.0090316521 * u**6
+    if y < 1600:
+        u = (y - 1000.0) / 100.0
+        return 1574.2 - 556.01 * u + 71.23472 * u**2 + 0.319781 * u**3 - 0.8503463 * u**4 - 0.005050998 * u**5 + 0.0083572073 * u**6
+    if y < 1700:
+        t = y - 1600
+        return 120.0 - 0.9808 * t - 0.01532 * t**2 + t**3 / 7129.0
+    if y < 1800:
+        t = y - 1700
+        return 8.83 + 0.1603 * t - 0.0059285 * t**2 + 0.00013336 * t**3 - t**4 / 1174000.0
     if 1800 <= y < 1860:
         t = y - 1800
         return 13.72 - 0.332447 * t + 0.0068612 * t**2 + 0.0041116 * t**3 - 0.00037436 * t**4 \
@@ -161,6 +170,27 @@ _ELEMENTS = {
 }
 
 
+# JPL Table 2a (valid 3000 BC - 3000 AD): same layout, plus b, c, s, f for the outer planets:
+# M = L - varpi + b*T^2 + c*cos(f*T) + s*sin(f*T)   (T in Julian centuries from J2000, f in degrees per century)
+_ELEMENTS_LONG = {
+    "Mercury": (0.38709843, 0.00000000, 0.20563661, 0.00002123, 7.00559432, -0.00590158,
+                252.25166724, 149472.67486623, 77.45771895, 0.15940013, 48.33961819, -0.12214182),
+    "Venus": (0.72332102, -0.00000026, 0.00676399, -0.00005107, 3.39777545, 0.00043494,
+              181.97970850, 58517.81560260, 131.76755713, 0.05679648, 76.67261496, -0.27274174),
+    "Earth": (1.00000018, -0.00000003, 0.01673163, -0.00003661, -0.00054346, -0.01337178,
+              100.46691572, 35999.37306329, 102.93005885, 0.31795260, -5.11260389, -0.24123856),
+    "Mars": (1.52371243, 0.00000097, 0.09336511, 0.00009149, 1.85181869, -0.00724757,
+             -4.56813164, 19140.29934243, -23.91744784, 0.45223625, 49.71320984, -0.26852431),
+    "Jupiter": (5.20248019, -0.00002864, 0.04853590, 0.00018026, 1.29861416, -0.00322699,
+                34.33479152, 3034.90371757, 14.27495244, 0.18199196, 100.29282654, 0.13024619),
+    "Saturn": (9.54149883, -0.00003065, 0.05550825, -0.00032044, 2.49424102, 0.00451969,
+               50.07571329, 1222.11494724, 92.86136063, 0.54179478, 113.63998702, -0.25015002),
+}
+_EXTRA_LONG = {"Jupiter": (-0.00012452, 0.06064060, -0.35635438, 38.35125000),
+               "Saturn": (0.00025899, -0.13434469, 0.87320147, 38.35125000)}
+TABLE1_T0, TABLE1_T1 = -2.0, 0.5            # 1800 .. 2050 in Julian centuries from J2000
+
+
 def _kepler(M_deg: float, e: float) -> float:
     M = norm180(M_deg) * DEG
     E = M + e * math.sin(M)
@@ -173,7 +203,8 @@ def _kepler(M_deg: float, e: float) -> float:
 
 
 def _helio_xyz(name: str, T: float) -> Tuple[float, float, float]:
-    a0, a1, e0, e1, i0, i1, l0, l1, w0, w1, o0, o1 = _ELEMENTS[name]
+    long_term = not (TABLE1_T0 <= T <= TABLE1_T1)
+    a0, a1, e0, e1, i0, i1, l0, l1, w0, w1, o0, o1 = (_ELEMENTS_LONG if long_term else _ELEMENTS)[name]
     a = a0 + a1 * T
     e = e0 + e1 * T
     inc = i0 + i1 * T
@@ -182,6 +213,9 @@ def _helio_xyz(name: str, T: float) -> Tuple[float, float, float]:
     node = o0 + o1 * T
     omega = varpi - node
     M = L - varpi
+    if long_term and name in _EXTRA_LONG:
+        b, c, sc, f = _EXTRA_LONG[name]
+        M += b * T * T + c * cosd(f * T) + sc * sind(f * T)
     E = _kepler(M, e)
     xp = a * (math.cos(E) - e)
     yp = a * math.sqrt(1.0 - e * e) * math.sin(E)

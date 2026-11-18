@@ -96,7 +96,7 @@ class ApiInputTests(unittest.TestCase):
         for d in ("1750-06-01", "2100-03-21", "1300-01-01"):
             k = api.kundli(d, "06:00", place="kolkata", years=0)
             self.assertEqual(len(k["planets"]), 9, d)
-            self.assertTrue(any("1800-2050" in w for w in k["warnings"]), d)
+            self.assertTrue(any(d[:4] in w and "Year" in w for w in k["warnings"]), d)
         self.assertIsNone(range_note(1992))
         s = api.sky("2027-01-27", "10:00", place="delhi")          # near future: fine, no warning
         self.assertNotIn("warnings", s)

@@ -38,6 +38,21 @@ The "published" dates above were taken from widely available panchang/almanac da
 - Jaimini karakas use the 7-karaka scheme (no Rahu). Remedies are traditional associations, not evidence.
 - Not yet included: Shadbala, Ashtakoota (Guna Milan) matching, Bhava Chalit, Arudha padas, Chara dasha, Yogini dasha.
 
+## Years 1-9999 (v0.3)
+- **Planets**: JPL Table 1 (1800-2050) and Table 2a (3000 BC-3000 AD) from the same Standish paper. Where both apply (1810-2050) they agree to
+  Mercury/Venus 0.01 deg, Mars 0.03, Jupiter 0.10, Saturn 0.33 deg (tested), which is also the size of the error to expect elsewhere
+  in 1600-3000. Beyond 3000 the table is extrapolated and drifts.
+- **Sun** checked against Meeus' independent equinox formulas: within 6 minutes in 325 CE, 1000 CE (4 min), 1600 (under 1), 2000 (2),
+  and 36 minutes (0.025 deg) by 4000 CE.
+- **Moon**: Meeus ch.47 with the Espenak-Meeus Delta-T for 1-1800. The new moon of 9 Aug 1133 (Julian 2 Aug, the day of King Henry I's eclipse) falls on
+  the right day; no precise historical Moon timing was checked beyond that, so treat times of tithi/nakshatra changes before 1600 as approximate.
+- **Historic events** reproduced on the right day: Mercury transit 1631, Venus transits 1639, 1761, 1769 (1769 within an hour of the published time).
+- **Calendar**: before 15 Oct 1582 dates are read as Julian and converted; `calendar=julian|gregorian` overrides. The countries' switch dates differ
+  (England 1752, Russia 1918, Greece 1923); the engine cannot know which a source used, so the AI/user must say.
+- **Local time**: before 1884 the place's local mean time (longitude/15 h) is used; later the IANA zone rules apply.
+- **Not covered**: dates before 1 CE (BCE needs a different date library), historical uncertainty of the birth date itself, fixed stars,
+  Uranus/Neptune/Pluto, comets, satellites.
+
 ## Input handling (v0.3)
 - Dates/times are parsed in many spellings (English/Bengali/Hindi digits and words); an ambiguous `03/04/2001` is read day-first and a note says so.
 - Unknown place names are looked up online through Open-Meteo when the machine has internet. This path is tested only with a mocked

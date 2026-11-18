@@ -117,7 +117,7 @@ class McpTests(unittest.TestCase):
 
     def test_tools_list(self):
         names = [t["name"] for t in self.rpc("tools/list")["result"]["tools"]]
-        self.assertEqual(sorted(names), ["jyotish_day_events", "jyotish_kundli", "jyotish_panchang", "jyotish_places", "jyotish_sky"])
+        self.assertEqual(sorted(names), ["jyotish_age", "jyotish_day_events", "jyotish_kundli", "jyotish_panchang", "jyotish_places", "jyotish_sky"])
 
     def test_call_kundli(self):
         r = self.rpc("tools/call", {"name": "jyotish_kundli", "arguments": {"date": "1995-08-15", "time": "14:30", "place": "kolkata", "years": 1}})["result"]

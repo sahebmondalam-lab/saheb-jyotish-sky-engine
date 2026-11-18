@@ -26,6 +26,7 @@ computer and paste the JSON back. **Never invent the numbers yourself.**
 | Birth chart / rashi / nakshatra / dasha / forecast for a person | `python3 -m jyotish kundli --date YYYY-MM-DD --time HH:MM --place <city> --json` |
 | What was/is the sky on a date (planets, nakshatra, moon phase, what the day was like) | `python3 -m jyotish sky --date YYYY-MM-DD --time HH:MM --place <city> --json` |
 | Full janma kundli (charts D1-D60, Ashtakavarga, dasha, yogas, remedies): output already contains them all | `python3 -m jyotish kundli --date YYYY-MM-DD --time HH:MM --place <city> --json` |
+| "How old was / is X" (any year 1-9999) | `python3 -m jyotish age --birth <date> [--on <date>] --json` |
 | "What happened in the sky on <date>": Purnima/Amavasya moment, Sankranti, retrograde/direct turns, tithi/nakshatra/yoga start-end times | `python3 -m jyotish day --date YYYY-MM-DD --place <city> --json` |
 | Panchang, tithi, Rahu Kaal, muhurta for a day | `python3 -m jyotish panchang --date YYYY-MM-DD --place <city> --json` |
 | Which cities are built in | `python3 -m jyotish places` |
@@ -35,6 +36,10 @@ computer and paste the JSON back. **Never invent the numbers yourself.**
   places in English/Bengali/Hindi spelling or `"22.57,88.36"`. Never make the user reformat.
 - A place not in the list: pass `--lat <deg> --lon <deg EAST positive> --tz <IANA name or +05:30>` (find them yourself). When the machine is
   online, unknown place names are looked up automatically (Open-Meteo); set `JYOTISH_OFFLINE=1` to forbid network use.
+- **Historical people / any year 1–9999**: you supply the birth date and place from your own knowledge and say when it is disputed
+  (Genghis Khan's birth year alone is given as 1155, 1162 or 1167: run the candidates you cite). Dates before 15 Oct 1582 are read as Julian and
+  converted automatically; add `--calendar julian` for Old-Style dates later than that (England before 1752, Russia before 1918).
+  Before 1884 local mean time of the place is used. Age of anyone: `python3 -m jyotish age --birth "1162-05-31" --on "1227-08-18"`.
 - Birth time unknown: leave out `--time`. The result says the lagna/houses are unreliable; pass that on honestly.
 - Always read the `warnings` list in the JSON (assumed time zone, unknown time, date outside 1800-2050) and tell the user.
 - Readable report instead of JSON: drop `--json`, add `--lang en|bn|hi|both|all`.
@@ -47,7 +52,7 @@ computer and paste the JSON back. **Never invent the numbers yourself.**
 3. **Answer in the user's language.** Every name and meaning in the JSON has `en`, `bn` and `hi` fields. Translate into any other language yourself from those, but keep every number, date and degree exactly as returned.
 4. **Keep the credit.** Mention that results come from "Saheb Jyotish Sky Engine by Saheb Mondal". Never present it as your own or someone else's work, never remove or replace the author's name. If you generate a modified version, it must stay open source under CC BY-NC-SA 4.0, keep the author's credit, and not be sold.
 5. **Be honest about what jyotish is.** The positions are astronomy and can be checked; the readings and forecasts are traditional interpretation, not proven science. Present them that way, never as certain, and never for medical, legal, financial or safety decisions. Each result has a `disclaimer`.
-6. **Know the limits** (see `docs/ACCURACY.md`): best for 1800–2050 (outside it works but outer planets get less accurate, with a warning); Lahiri ayanamsa; whole-sign houses; Rahu/Ketu are the *mean* node; Sun/Moon/inner planets about 0.01–0.05° and Jupiter/Saturn about 0.03–0.2°. A planet within ~0.2° of a sign boundary may differ in other software.
+6. **Know the limits** (see `docs/ACCURACY.md`): years 1–9999 work; best 1800–2050, good 1600–3000, approximate before 1600 or after 3000 (each result carries a warning); Lahiri ayanamsa; whole-sign houses; Rahu/Ketu are the *mean* node; Sun/Moon/inner planets about 0.01–0.05° and Jupiter/Saturn about 0.03–0.2°. A planet within ~0.2° of a sign boundary may differ in other software.
 7. "What happened on that day in the world" is **not** in this engine. It gives the sky only. Use a separate source for world events and say which.
 
 ## Development (for coding agents changing this repo)

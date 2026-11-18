@@ -17,6 +17,8 @@ def _add_place_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--lat", type=float, help="latitude, north positive")
     p.add_argument("--lon", type=float, help="longitude, EAST positive")
     p.add_argument("--tz", help="IANA timezone (Asia/Kolkata) or offset (+05:30)")
+    p.add_argument("--calendar", choices=["auto", "julian", "gregorian"], default="auto",
+                   help="how to read the date: auto = Julian before 15 Oct 1582, Gregorian after (default)")
     p.add_argument("--lang", choices=LANGS, default="both",
                    help="en | bn | hi | both (en+bn, default) | all (en+bn+hi)")
     p.add_argument("--json", action="store_true", help="machine-readable JSON (for programs and AI assistants)")
@@ -55,6 +57,13 @@ def main(argv=None) -> int:
     dy.add_argument("--date", default=date.today().isoformat(), help="YYYY-MM-DD (default today)")
     _add_place_args(dy)
 
+    ag = sub.add_parser("age", help="age between a birth date and another date (default today); old dates are read as Julian before 1582")
+    ag.add_argument("--birth", required=True, help="birth date, any common form, any year 1-9999")
+    ag.add_argument("--on", default=None, help="the other date (default today), e.g. the date of death")
+    ag.add_argument("--calendar", choices=["auto", "julian", "gregorian"], default="auto")
+    ag.add_argument("--lang", choices=LANGS, default="both")
+    ag.add_argument("--json", action="store_true")
+
     sub.add_parser("places", help="list built-in places (JSON)")
     sub.add_parser("mcp", help="run as an MCP server over stdio, so AI apps can use this engine as a tool")
 
@@ -69,12 +78,19 @@ def main(argv=None) -> int:
         if args.cmd == "mcp":
             from .mcp_server import serve
             return serve()
-        place = dict(place=args.place, lat=args.lat, lon=args.lon, tz=args.tz)
+        place = dict(place=getattr(args, "place", None), lat=getattr(args, "lat", None), lon=getattr(args, "lon", None),
+                     tz=getattr(args, "tz", None), calendar=getattr(args, "calendar", "auto"))
         if args.cmd == "panchang":
             if args.json:
                 _dump(api.panchang(args.date, **place))
             else:
                 sys.stdout.write(api.report("panchang", args.lang, date=args.date, **place))
+            return 0
+        if args.cmd == "age":
+            if args.json:
+                _dump(api.age(args.birth, args.on, args.calendar))
+            else:
+                sys.stdout.write(api.report("age", args.lang, date=args.birth, on=args.on, calendar=args.calendar))
             return 0
         if args.cmd == "day":
             if args.json:

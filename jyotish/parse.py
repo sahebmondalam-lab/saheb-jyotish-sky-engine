@@ -31,24 +31,31 @@ def normalize(text: str) -> str:
 
 
 def parse_date(text, notes: Optional[List[str]] = None) -> date:
+    """Gregorian date as written (see calendars.resolve_date for Julian/old dates)."""
     if isinstance(text, date):
         return text
+    y, m, d = parse_ymd(text, notes)
+    return _mk(y, m, d, text)
+
+
+def parse_ymd(text, notes: Optional[List[str]] = None):
+    """Year, month, day exactly as written (calendar not checked)."""
     s = normalize(text)
     if not s:
         raise ValueError("date is empty")
     notes = notes if notes is not None else []
     m = re.fullmatch(r"(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})", s)
     if m:
-        return _mk(int(m.group(1)), int(m.group(2)), int(m.group(3)), text)
+        return _chk(int(m.group(1)), int(m.group(2)), int(m.group(3)), text)
     m = re.fullmatch(r"(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})", s)
     if m:
         a, b, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
         if b > 12 and a <= 12:
             notes.append(f"Date '{s}' read as MM/DD/YYYY because {b} cannot be a month.")
-            return _mk(y, a, b, text)
+            return _chk(y, a, b, text)
         if a <= 12 and b <= 12 and a != b:
             notes.append(f"Date '{s}' is ambiguous; read as DD/MM/YYYY (day first). Say so if you meant month first.")
-        return _mk(y, b, a, text)
+        return _chk(y, b, a, text)
     low = s.lower().replace(",", " ")
     low = re.sub(r"(\d)(st|nd|rd|th)\b", r"\1", low)
     tokens = low.split()
@@ -61,8 +68,14 @@ def parse_date(text, notes: Optional[List[str]] = None) -> date:
         elif re.fullmatch(r"\d{1,2}", t):
             day = int(t)
     if day and month and year:
-        return _mk(year, month, day, text)
+        return _chk(year, month, day, text)
     raise ValueError(f"Cannot understand date '{text}'. Use e.g. 1992-01-27, 27/01/1992 or 27 Jan 1992.")
+
+
+def _chk(y: int, m: int, d: int, original):
+    if not (1 <= m <= 12 and 1 <= d <= 31 and 1 <= y <= 9999):
+        raise ValueError(f"'{original}' is not a real calendar date.")
+    return y, m, d
 
 
 def _mk(y: int, m: int, d: int, original) -> date:
@@ -111,11 +124,20 @@ def parse_time(text) -> Tuple[int, int, int]:
     return h, mi, sec
 
 
-VALID_FROM, VALID_TO = 1800, 2050
+VALID_FROM, VALID_TO = 1800, 2050          # span of the JPL Table 1 elements
+LONG_FROM, LONG_TO = 1600, 3000            # span treated as "good" with the long-term table
+YEAR_MIN, YEAR_MAX = 1, 9999
 
 
 def range_note(year: int) -> Optional[str]:
     if VALID_FROM <= year <= VALID_TO:
         return None
-    return (f"Year {year} is outside 1800-2050, the span the built-in JPL planetary elements are fitted to. "
-            "Moon, Sun and the tithi/nakshatra are still good, but outer-planet positions can be off by degrees; treat them as approximate.")
+    if LONG_FROM <= year <= LONG_TO:
+        return (f"Year {year} is outside 1800-2050, so the long-term JPL planetary table is used: Sun, Moon, Mercury, Venus and Mars stay within "
+                "about 0.1 degree; Jupiter and Saturn can be off by up to about 0.3 degree (a rashi or nakshatra edge can differ).")
+    if year < LONG_FROM:
+        return (f"Year {year} is before 1600. Sun and Moon are still good (the Sun matches Meeus' equinox formulas to under 10 minutes back to 325 CE), "
+                "but the long-term planet table is rougher (Jupiter and Saturn up to ~0.5 degree), the Earth's spin (Delta-T) is uncertain, "
+                "and the calendar and local time of that era are uncertain too. Treat the result as approximate.")
+    return (f"Year {year} is beyond 3000, past the range the long-term planet table was fitted to. The Sun stays within about 40 minutes "
+            "of exact until 4000 and the Moon is good to a fraction of a degree, but the planets drift further each century. Treat as approximate.")

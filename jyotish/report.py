@@ -72,11 +72,11 @@ def dms(deg: float) -> str:
 def fmt_jd(jd: Optional[float], tz) -> str:
     if jd is None:
         return "-"
-    return A.datetime_from_jd(jd).astimezone(tz).strftime("%Y-%m-%d %H:%M")
+    return A.format_jd(jd, tz, "%Y-%m-%d %H:%M")
 
 
 def fmt_day(jd: float, tz) -> str:
-    return A.datetime_from_jd(jd).astimezone(tz).strftime("%Y-%m-%d")
+    return A.format_jd(jd, tz, "%Y-%m-%d")
 
 
 def _title(o: Out, en: str, bn: str, hi: str) -> None:

@@ -37,11 +37,17 @@ INSTRUCTIONS = (
     "(6) Always credit 'Saheb Jyotish Sky Engine by Saheb Mondal' and never present the engine as your own or as someone else's. "
     "(7) Jyotish is traditional belief, not proven science: present forecasts as traditional interpretation, never as certain, and "
     "never for medical, legal, financial or safety decisions. Remedies and gemstones are traditional associations only. "
-    "(8) Positions are computed, not fetched, so no internet is needed; they are best for 1800-2050 and approximate outside it."
+    "(8) Positions are computed, not fetched, so no internet is needed. Years 1 to 9999 work. Accuracy is best 1800-2050, good 1600-3000, "
+    "and approximate before 1600 or after 3000 (the result's warnings say so). "
+    "(9) HISTORICAL PEOPLE (e.g. Genghis Khan): you supply the birth date and place from your own knowledge, say clearly when the date is "
+    "uncertain or disputed (try each candidate if useful), pass dates as historians write them (before 15 Oct 1582 the engine reads them as "
+    "Julian and converts; use calendar=julian for Old-Style dates after 1582), and leave the time out if unknown. Use jyotish_age for ages. "
+    "Never present an uncertain historical date or an unknown birth time as fact."
 )
 
 _PLACE_PROPS = {
     "place": {"type": "string", "description": "Any place name (built-in list incl. Bengali/Hindi spellings; other places are looked up online when possible), or a 'lat,lon' pair. For certainty give latitude + longitude + timezone instead."},
+    "calendar": {"type": "string", "enum": ["auto", "julian", "gregorian"], "description": "How to read the date. auto (default) = Julian before 15 Oct 1582, Gregorian after. Use julian for Old-Style dates after 1582 (England before 1752, Russia before 1918) and gregorian to force the modern calendar."},
     "latitude": {"type": "number", "description": "Latitude in degrees, north positive."},
     "longitude": {"type": "number", "description": "Longitude in degrees, EAST positive (Kolkata is +88.36)."},
     "timezone": {"type": "string", "description": "IANA name like Asia/Kolkata, or offset like +05:30."},
@@ -73,6 +79,12 @@ TOOLS = [
      "description": "Everything that happens in the sky on one local day: exact moments of New/Full/Quarter Moon, sign changes of all grahas (Sun's = Sankranti), retrograde/direct turns, and the full tithi, nakshatra and yoga timeline with start and end times. Use for 'what happened in the sky on that date'. Eclipses are not included.",
      "inputSchema": {"type": "object", "properties": {"date": {"type": "string", "description": "YYYY-MM-DD, default today."},
                                                       **_PLACE_PROPS, **_FORMAT_PROPS}}},
+    {"name": "jyotish_age",
+     "description": "Exact age (years, months, days, total days, weekday of birth) between a birth date and another date (default today), for anyone in history. Dates before 15 Oct 1582 are read in the Julian calendar. Use for 'how old was X' or 'how old would X be today'.",
+     "inputSchema": {"type": "object", "required": ["birth"], "properties": {
+         "birth": {"type": "string", "description": "Birth date, any common form, year 1-9999."},
+         "on": {"type": "string", "description": "The other date (e.g. death date). Default today."},
+         "calendar": _PLACE_PROPS["calendar"], **_FORMAT_PROPS}}},
     {"name": "jyotish_places",
      "description": "List the built-in places with latitude, longitude and timezone.",
      "inputSchema": {"type": "object", "properties": {}}},
@@ -80,7 +92,7 @@ TOOLS = [
 
 
 def _place_args(a: Dict[str, Any]) -> Dict[str, Any]:
-    return {"place": a.get("place"), "lat": a.get("latitude"), "lon": a.get("longitude"), "tz": a.get("timezone")}
+    return {"place": a.get("place"), "lat": a.get("latitude"), "lon": a.get("longitude"), "tz": a.get("timezone"), "calendar": a.get("calendar")}
 
 
 def call_tool(name: str, a: Dict[str, Any]) -> str:
@@ -94,6 +106,12 @@ def call_tool(name: str, a: Dict[str, Any]) -> str:
         if fmt == "text":
             return api.report("panchang", lang, date=a.get("date"), **place)
         return json.dumps(api.panchang(a.get("date"), **place), ensure_ascii=False, indent=1)
+    if name == "jyotish_age":
+        if "birth" not in a:
+            raise ValueError("birth date is required")
+        if fmt == "text":
+            return api.report("age", lang, date=a["birth"], on=a.get("on"), calendar=a.get("calendar"))
+        return json.dumps(api.age(a["birth"], a.get("on"), a.get("calendar")), ensure_ascii=False, indent=1)
     if name == "jyotish_day_events":
         if fmt == "text":
             return api.report("day", lang, date=a.get("date"), **place)

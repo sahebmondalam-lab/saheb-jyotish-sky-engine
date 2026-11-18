@@ -19,7 +19,44 @@ from typing import List, Optional
 from zoneinfo import ZoneInfo
 
 from .data import PLACES, PLACE_ALIASES
-from .parse import normalize, parse_date, parse_time
+from .calendars import resolve_date
+from .parse import normalize, parse_time
+
+
+LMT_BEFORE = 1884   # before the 1884 Washington conference there were no standard time zones
+
+
+class HistoricTZ(tzinfo):
+    """An IANA zone for modern dates and the place's own local mean time (longitude / 15 hours) before 1884.
+
+    The IANA database only has one early 'LMT' value per zone (for India it is Calcutta's), which would be wrong by up to an hour for
+    other places and meaningless in the Middle Ages, so before 1884 the exact local mean time of the longitude is used instead.
+    """
+
+    def __init__(self, base: ZoneInfo, lon: float):
+        self.base = base
+        self.lmt = timedelta(seconds=round(lon * 240.0))
+        self.key = getattr(base, "key", str(base))
+
+    def utcoffset(self, dt):
+        if dt is None:
+            return None
+        return self.lmt if dt.year < LMT_BEFORE else dt.replace(tzinfo=self.base).utcoffset()
+
+    def dst(self, dt):
+        return timedelta(0) if dt is None or dt.year < LMT_BEFORE else dt.replace(tzinfo=self.base).dst()
+
+    def tzname(self, dt):
+        return "LMT" if dt is not None and dt.year < LMT_BEFORE else dt.replace(tzinfo=self.base).tzname()
+
+    def fromutc(self, dt):
+        if dt.year < LMT_BEFORE:
+            return dt + self.lmt
+        return self.base.fromutc(dt.replace(tzinfo=self.base)).replace(tzinfo=self)
+
+
+def _wrap(tzobj: tzinfo, lon: float) -> tzinfo:
+    return HistoricTZ(tzobj, lon) if isinstance(tzobj, ZoneInfo) else tzobj
 
 
 @dataclass
@@ -30,6 +67,7 @@ class Location:
     tz: tzinfo
     tz_name: str
     notes: List[str] = field(default_factory=list)   # assumptions made while resolving the place
+    calendar: str = "auto"                            # how to read old dates: auto | julian | gregorian
 
 
 def parse_tz(text: str) -> tuple[tzinfo, str]:
@@ -96,7 +134,15 @@ def _builtin(place: str) -> Optional[str]:
 
 
 def resolve_location(place: Optional[str] = None, lat: Optional[float] = None,
-                     lon: Optional[float] = None, tz: Optional[str] = None) -> Location:
+                     lon: Optional[float] = None, tz: Optional[str] = None, calendar: Optional[str] = None) -> Location:
+    loc = _resolve(place, lat, lon, tz)
+    loc.calendar = (calendar or "auto").lower()
+    loc.tz = _wrap(loc.tz, loc.lon)
+    return loc
+
+
+def _resolve(place: Optional[str] = None, lat: Optional[float] = None,
+             lon: Optional[float] = None, tz: Optional[str] = None) -> Location:
     if lat is None and lon is None and place:
         m = re.fullmatch(r"\s*(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)\s*", normalize(place))
         if m:                                   # 'lat,lon' typed as the place
@@ -127,6 +173,6 @@ def resolve_location(place: Optional[str] = None, lat: Optional[float] = None,
 
 def make_local_datetime(date_str, time_str, loc: Location) -> datetime:
     """Any common date/time spelling, interpreted in the place's local time zone."""
-    d = parse_date(date_str, loc.notes)
+    d = resolve_date(date_str, loc.calendar, loc.notes)
     h, mi, s = parse_time(time_str)
     return datetime(d.year, d.month, d.day, h, mi, s, tzinfo=loc.tz)

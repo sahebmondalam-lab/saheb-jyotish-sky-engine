@@ -16,7 +16,9 @@ from . import data_hi as HIN
 from . import transits as TR
 from .chart import build_chart
 from .location import Location, make_local_datetime, resolve_location
-from .parse import is_unknown_time, parse_date, range_note
+from .calendars import resolve_date
+from .location import HistoricTZ, LMT_BEFORE
+from .parse import is_unknown_time, range_note
 from .panchang import day_panchang, panchang_at, day_times
 from .report import render_kundli, render_panchang, render_sky, render_day, _tithi_name, _karana_name
 
@@ -57,11 +59,11 @@ def _grah(g: str) -> Dict:
 def _iso(jd: Optional[float], tz) -> Optional[str]:
     if jd is None:
         return None
-    return A.datetime_from_jd(jd).astimezone(tz).strftime("%Y-%m-%dT%H:%M:%S%z")
+    return A.format_jd(jd, tz, "%Y-%m-%dT%H:%M:%S%z").replace(" ", "T")
 
 
 def _day(jd: float, tz) -> str:
-    return A.datetime_from_jd(jd).astimezone(tz).strftime("%Y-%m-%d")
+    return A.format_jd(jd, tz, "%Y-%m-%d")
 
 
 UNKNOWN_TIME_NOTE = ("Birth time not known: 12:00 noon was used. The lagna (ascendant), houses, divisional charts and the exact Moon "
@@ -73,6 +75,11 @@ def _prep(loc: Location, year: int, unknown_time: bool = False) -> Location:
     """Record assumptions (date range, unknown time) on the location so every output can show them."""
     for n in (range_note(year), UNKNOWN_TIME_NOTE if unknown_time else None):
         if n and n not in loc.notes:
+            loc.notes.append(n)
+    if year < LMT_BEFORE and isinstance(loc.tz, HistoricTZ):
+        n = ("Before 1884 there were no standard time zones, so the place's own local mean time (longitude / 15 hours) was used for "
+             "all clock times. Give the birth time as local clock time of that place.")
+        if n not in loc.notes:
             loc.notes.append(n)
     return loc
 
@@ -131,8 +138,8 @@ def places() -> Dict:
 
 
 def sky(date: Optional[str] = None, time: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None,
-        lon: Optional[float] = None, tz: Optional[str] = None) -> Dict:
-    loc = resolve_location(place, lat, lon, tz)
+        lon: Optional[float] = None, tz: Optional[str] = None, calendar: Optional[str] = None) -> Dict:
+    loc = resolve_location(place, lat, lon, tz, calendar)
     if date is None and time is None:
         local_dt = datetime.now(timezone.utc).astimezone(loc.tz)
     else:
@@ -162,9 +169,9 @@ def sky(date: Optional[str] = None, time: Optional[str] = None, place: Optional[
 
 
 def panchang(date: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None,
-             lon: Optional[float] = None, tz: Optional[str] = None) -> Dict:
-    loc = resolve_location(place, lat, lon, tz)
-    d = parse_date(date, loc.notes) if date else _today(loc)
+             lon: Optional[float] = None, tz: Optional[str] = None, calendar: Optional[str] = None) -> Dict:
+    loc = resolve_location(place, lat, lon, tz, calendar)
+    d = resolve_date(date, loc.calendar, loc.notes) if date else _today(loc)
     _prep(loc, d.year)
     p = day_panchang(d, loc)
     return {"credit": credit_block(), "kind": "panchang", "date": d.isoformat(), "place": _loc_block(loc),
@@ -174,11 +181,11 @@ def panchang(date: Optional[str] = None, place: Optional[str] = None, lat: Optio
 
 
 def day_events(date: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None,
-               lon: Optional[float] = None, tz: Optional[str] = None) -> Dict:
+               lon: Optional[float] = None, tz: Optional[str] = None, calendar: Optional[str] = None) -> Dict:
     """Moon-phase moments, sign changes (sankranti), retrograde/direct turns and tithi/nakshatra/yoga timeline for one local day."""
     from .events import day_events as _ev
-    loc = resolve_location(place, lat, lon, tz)
-    d = parse_date(date, loc.notes) if date else _today(loc)
+    loc = resolve_location(place, lat, lon, tz, calendar)
+    d = resolve_date(date, loc.calendar, loc.notes) if date else _today(loc)
     _prep(loc, d.year)
     e = _ev(d, loc)
     z = loc.tz
@@ -196,9 +203,40 @@ def day_events(date: Optional[str] = None, place: Optional[str] = None, lat: Opt
             "yoga": [seg(x, lambda i: _n(D.YOGA[i])) for x in e["yoga"]]}
 
 
+def age(birth: str, on: Optional[str] = None, calendar: Optional[str] = None, on_calendar: Optional[str] = None) -> Dict:
+    """Age between a birth date and another date (default today): years, months, days and exact day count.
+
+    Dates before 15 Oct 1582 are read as Julian (see --calendar). The count is exact; years/months/days are counted in the proleptic
+    Gregorian calendar after converting both dates.
+    """
+    notes: list = []
+    b = resolve_date(birth, calendar or "auto", notes)
+    o = resolve_date(on, on_calendar or "auto", notes) if on else datetime.now(timezone.utc).date()
+    if o < b:
+        raise ValueError("The second date is before the birth date.")
+    y, m, d = o.year - b.year, o.month - b.month, o.day - b.day
+    if d < 0:
+        m -= 1
+        pm = o.month - 1 or 12
+        py = o.year if o.month > 1 else o.year - 1
+        d += [31, 29 if (py % 4 == 0 and (py % 100 != 0 or py % 400 == 0)) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][pm - 1]
+    if m < 0:
+        y -= 1
+        m += 12
+    total = (o - b).days
+    wd = D.VARA[(b.weekday() + 1) % 7]
+    out = {"credit": credit_block(), "kind": "age", "birth_gregorian": b.isoformat(), "on_gregorian": o.isoformat(),
+           "years": y, "months": m, "days": d, "total_days": total, "approx_years": round(total / 365.2425, 3),
+           "birth_weekday": _n(wd)}
+    if notes:
+        out["warnings"] = notes
+    return out
+
+
 def kundli(date: str, time: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None, lon: Optional[float] = None,
-           tz: Optional[str] = None, name: str = "", years: float = 5.0, now: Optional[str] = None) -> Dict:
-    loc = resolve_location(place, lat, lon, tz)
+           tz: Optional[str] = None, name: str = "", years: float = 5.0, now: Optional[str] = None,
+           calendar: Optional[str] = None) -> Dict:
+    loc = resolve_location(place, lat, lon, tz, calendar)
     unknown = is_unknown_time(time)
     local_dt = make_local_datetime(date, "12:00" if unknown else time, loc)
     _prep(loc, local_dt.year, unknown)
@@ -309,9 +347,21 @@ def kundli(date: str, time: Optional[str] = None, place: Optional[str] = None, l
 
 def report(kind: str, lang: str = "both", **kw) -> str:
     """Readable text report. kind: 'kundli' | 'panchang' | 'sky' | 'day'. lang: en|bn|hi|both|all."""
-    loc = resolve_location(kw.get("place"), kw.get("lat"), kw.get("lon"), kw.get("tz"))
+    if kind == "age":
+        a = age(kw["date"], kw.get("on"), kw.get("calendar"))
+        from .report import Out
+        o = Out(lang)
+        o.add(f"Age: {a['years']} years, {a['months']} months, {a['days']} days  ({a['total_days']} days in all; born on a {o.nm(D.VARA[(datetime.fromisoformat(a['birth_gregorian']).weekday() + 1) % 7])})",
+              f"বয়স: {a['years']} বছর, {a['months']} মাস, {a['days']} দিন  (মোট {a['total_days']} দিন; জন্ম {o.nm(D.VARA[(datetime.fromisoformat(a['birth_gregorian']).weekday() + 1) % 7])})",
+              f"आयु: {a['years']} वर्ष, {a['months']} माह, {a['days']} दिन  (कुल {a['total_days']} दिन; जन्म {o.nm(D.VARA[(datetime.fromisoformat(a['birth_gregorian']).weekday() + 1) % 7])})")
+        for n in a.get("warnings", []):
+            o.add("  * " + n, "  * " + n, "  * " + n)
+        o.add(f"Dates used (Gregorian): {a['birth_gregorian']} -> {a['on_gregorian']}", f"ব্যবহৃত তারিখ (গ্রেগরিয়ান): {a['birth_gregorian']} -> {a['on_gregorian']}",
+              f"प्रयुक्त तिथियाँ (ग्रेगोरियन): {a['birth_gregorian']} -> {a['on_gregorian']}")
+        return o.text()
+    loc = resolve_location(kw.get("place"), kw.get("lat"), kw.get("lon"), kw.get("tz"), kw.get("calendar"))
     if kind == "panchang":
-        d = parse_date(kw["date"], loc.notes) if kw.get("date") else _today(loc)
+        d = resolve_date(kw["date"], loc.calendar, loc.notes) if kw.get("date") else _today(loc)
         _prep(loc, d.year)
         return render_panchang(d, loc, lang)
     if kind == "sky":
@@ -323,7 +373,7 @@ def report(kind: str, lang: str = "both", **kw) -> str:
         _prep(loc, dt.year)
         return render_sky(dt, loc, lang)
     if kind == "day":
-        d = parse_date(kw["date"], loc.notes) if kw.get("date") else _today(loc)
+        d = resolve_date(kw["date"], loc.calendar, loc.notes) if kw.get("date") else _today(loc)
         _prep(loc, d.year)
         return render_day(d, loc, lang)
     if kind == "kundli":
