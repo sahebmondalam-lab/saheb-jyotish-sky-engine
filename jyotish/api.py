@@ -177,7 +177,46 @@ def panchang(date: Optional[str] = None, place: Optional[str] = None, lat: Optio
     return {"credit": credit_block(), "kind": "panchang", "date": d.isoformat(), "place": _loc_block(loc),
             "note": "Tithi/nakshatra/yoga/karana are those running at local sunrise.", **_warnings(loc),
             "vara": {**_n(D.VARA[p["vara_index"]]), "lord": _grah(D.VARA_LORD[p["vara_index"]])},
-            "panchang": _panchang_block(p, loc.tz), "day_times": _times_block(p, loc.tz)}
+            "panchang": _panchang_block(p, loc.tz), "day_times": _times_block(p, loc.tz),
+            "hindu_calendar": __import__("jyotish.hindu_calendar", fromlist=["safe_describe"]).safe_describe(d, loc)}
+
+
+def _fest_json(f: Dict) -> Dict:
+    return {"date": f["date"].isoformat(), "name": {"en": f["en"], "bn": f["bn"], "hi": f["hi"]}, "rule": f["rule"],
+            "alternative_dates": [a.isoformat() for a in f.get("alternative_dates", [])], "how": f.get("how", "")}
+
+
+def _safe_fest(d, loc):
+    from .report_calendar import festivals_on
+    try:
+        return [_fest_json(f) for f in festivals_on(d, loc)]
+    except (OverflowError, ValueError):
+        return []
+
+
+def hindu_calendar(date: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None,
+                   lon: Optional[float] = None, tz: Optional[str] = None, calendar: Optional[str] = None) -> Dict:
+    """Hindu calendar for one day: lunar month (amanta/purnimanta, adhika), paksha, tithi, Vikram/Shaka/Kali, samvatsara,
+    ritu, ayana, Bengali/Tamil/Malayalam/Odia/National solar dates, and the festivals of that day."""
+    from . import hindu_calendar as HC
+    from .report_calendar import festivals_on
+    loc = resolve_location(place, lat, lon, tz, calendar)
+    d = resolve_date(date, loc.calendar, loc.notes) if date else _today(loc)
+    _prep(loc, d.year)
+    return {"credit": credit_block(), "kind": "hindu_calendar", "place": _loc_block(loc), **_warnings(loc),
+            **HC.safe_describe(d, loc), "festivals_on_this_day": _safe_fest(d, loc)}
+
+
+def festivals(year: Optional[int] = None, place: Optional[str] = None, lat: Optional[float] = None,
+              lon: Optional[float] = None, tz: Optional[str] = None, calendar: Optional[str] = None) -> Dict:
+    """All main Hindu festivals, Ekadashis, Purnimas, Amavasyas and Sankrantis of a Gregorian year."""
+    from . import hindu_calendar as HC
+    loc = resolve_location(place, lat, lon, tz, calendar)
+    y = int(year) if year else _today(loc).year
+    _prep(loc, y)
+    return {"credit": credit_block(), "kind": "festivals", "year": y, "place": _loc_block(loc), **_warnings(loc),
+            "method": "Drik method (modern ephemeris, Lahiri) for the chosen place; alternative_dates lists other days almanacs may use",
+            "festivals": [_fest_json(f) for f in HC.festivals_for_year(y, loc)]}
 
 
 def day_events(date: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None,
@@ -307,6 +346,10 @@ def kundli(date: str, time: Optional[str] = None, place: Optional[str] = None, l
     from . import deep as DP
     from .report_deep import BHAVA, KARAKA, NAMAKSHAR, REMEDY, VARGA_NAME, namakshar
     da = DP.analyse(c)
+    from . import hindu_calendar as _HC
+    from .report_calendar import hindu_day_of_birth
+    _hd = hindu_day_of_birth(c)
+    out["hindu_calendar"] = {**_HC.safe_describe(_hd, loc), "hindu_day_note": "Hindu day = sunrise to sunrise; a birth before local sunrise belongs to the previous civil date's Hindu day."}
     out["divisional_charts"] = {f"D{n}": {"name": dict(zip(("en", "bn", "hi"), VARGA_NAME[n])), "lagna": _sign(v["lagna"]),
                                           "planets": {g: _sign(sg) for g, sg in v["planets"].items()}} for n, v in da["vargas"].items()}
     mo = c["planets"]["Moon"]
@@ -376,6 +419,16 @@ def report(kind: str, lang: str = "both", **kw) -> str:
         d = resolve_date(kw["date"], loc.calendar, loc.notes) if kw.get("date") else _today(loc)
         _prep(loc, d.year)
         return render_day(d, loc, lang)
+    if kind == "calendar":
+        from .report_calendar import render_calendar
+        d = resolve_date(kw["date"], loc.calendar, loc.notes) if kw.get("date") else _today(loc)
+        _prep(loc, d.year)
+        return render_calendar(d, loc, lang)
+    if kind == "festivals":
+        from .report_calendar import render_festivals
+        y = int(kw["year"]) if kw.get("year") else _today(loc).year
+        _prep(loc, y)
+        return render_festivals(y, loc, lang)
     if kind == "kundli":
         unknown = is_unknown_time(kw.get("time"))
         local_dt = make_local_datetime(kw["date"], "12:00" if unknown else kw["time"], loc)
@@ -385,4 +438,4 @@ def report(kind: str, lang: str = "both", **kw) -> str:
         years = float(kw.get("years", 5.0))
         fc = TR.forecast(c["moon_sign"], njd, years) if years > 0 else None
         return render_kundli(c, fc, lang, njd, loc)
-    raise ValueError("kind must be kundli, panchang, sky or day")
+    raise ValueError("kind must be kundli, panchang, sky, day, calendar or festivals")

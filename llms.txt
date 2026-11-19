@@ -18,6 +18,8 @@ Important for AI assistants: always call the tool for any astronomical or jyotis
 - `python3 -m jyotish kundli --date YYYY-MM-DD --time HH:MM --place kolkata --json`
 - `python3 -m jyotish sky --date YYYY-MM-DD --time HH:MM --place kolkata --json`
 - `python3 -m jyotish panchang --date YYYY-MM-DD --place kolkata --json`
+- `python3 -m jyotish calendar --date YYYY-MM-DD --place kolkata --json`   (Hindu calendar: lunar month, Vikram/Shaka, Bengali/Tamil/Malayalam dates, festivals)
+- `python3 -m jyotish festivals --year YYYY --place delhi --json`   (Diwali, Holi, Durga Puja, every Ekadashi ...)
 - Input is forgiving: any date/time spelling, place names in English/Bengali/Hindi or "lat,lon"; time may be omitted (lagna then flagged unreliable); read `warnings`.
 - `python3 -m jyotish age --birth <date> --on <date> --json`  (exact age, any year 1-9999; pre-1582 dates read as Julian)
 - Years 1-9999 work (best 1800-2050, good 1600-3000); for historical people supply the date yourself, say if disputed.

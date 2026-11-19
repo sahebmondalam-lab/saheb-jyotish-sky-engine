@@ -28,6 +28,8 @@ computer and paste the JSON back. **Never invent the numbers yourself.**
 | Full janma kundli (charts D1-D60, Ashtakavarga, dasha, yogas, remedies): output already contains them all | `python3 -m jyotish kundli --date YYYY-MM-DD --time HH:MM --place <city> --json` |
 | "How old was / is X" (any year 1-9999) | `python3 -m jyotish age --birth <date> [--on <date>] --json` |
 | "What happened in the sky on <date>": Purnima/Amavasya moment, Sankranti, retrograde/direct turns, tithi/nakshatra/yoga start-end times | `python3 -m jyotish day --date YYYY-MM-DD --place <city> --json` |
+| Hindu date: lunar month (Adhika), paksha, tithi, Vikram/Shaka/Kali year, Samvatsara, Bengali/Tamil/Malayalam/Odia/National date, festivals of the day | `python3 -m jyotish calendar --date YYYY-MM-DD --place <city> --json` |
+| Festival dates of a year (Diwali, Holi, Durga Puja, Janmashtami, every Ekadashi, Purnima, Amavasya, Sankranti) | `python3 -m jyotish festivals --year YYYY --place <city> --json` |
 | Panchang, tithi, Rahu Kaal, muhurta for a day | `python3 -m jyotish panchang --date YYYY-MM-DD --place <city> --json` |
 | Which cities are built in | `python3 -m jyotish places` |
 

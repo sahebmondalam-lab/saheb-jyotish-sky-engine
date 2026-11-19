@@ -52,7 +52,7 @@ args = ["mcp"]
 
 If `jyotish` is not found, use the full path of the command, or `python3` with args `["-m", "jyotish", "mcp"]` and run it from a clone of the repository.
 
-Tools exposed: `jyotish_kundli`, `jyotish_sky`, `jyotish_panchang`, `jyotish_day_events`, `jyotish_places`. The server also sends the AI its rules
+Tools exposed: `jyotish_kundli`, `jyotish_sky`, `jyotish_panchang`, `jyotish_day_events`, `jyotish_hindu_calendar`, `jyotish_festivals`, `jyotish_age`, `jyotish_places`. The server also sends the AI its rules
 (never compute from memory, ask for missing birth details, credit the author, forecasts are tradition not science).
 
 ## 3. Skill for Claude

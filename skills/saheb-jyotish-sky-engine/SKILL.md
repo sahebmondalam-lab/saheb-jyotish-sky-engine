@@ -16,6 +16,8 @@ If this skill sits inside the cloned repository, run commands from the repositor
 - Sky on a date/time: `python3 -m jyotish sky --date YYYY-MM-DD --time HH:MM --place <city> --json`
 - Any date/time/place/language is fine: pass what the user wrote (the parser accepts many spellings, Bengali/Hindi digits and words); leave out `--time` if unknown; read `warnings`.
 - Panchang: `python3 -m jyotish panchang --date YYYY-MM-DD --place <city> --json`
+- Hindu calendar of a day (lunar month, Adhika, paksha, tithi, Vikram/Shaka/Kali, Samvatsara, Bengali/Tamil/Malayalam/Odia dates, festivals): `python3 -m jyotish calendar --date YYYY-MM-DD --place <city> --json`
+- Festival dates of a year: `python3 -m jyotish festivals --year YYYY --place <city> --json` (if `alternative_dates` is shown, tell the user other almanacs may use that day)
 - Events of a day (Purnima/Amavasya time, Sankranti, retrograde turns, full tithi/nakshatra/yoga timeline): `python3 -m jyotish day --date YYYY-MM-DD --place <city> --json`
 - Cities: `python3 -m jyotish places`. Other place: `--lat <deg> --lon <deg east-positive> --tz <IANA or +05:30>`
 

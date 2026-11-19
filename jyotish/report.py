@@ -317,6 +317,10 @@ def render_kundli(chart: Dict, fc: Optional[Dict], lang: str, now_jd: float, loc
     from .report_deep import render_deep
     render_deep(o, chart)
 
+    from .report_calendar import calendar_block, hindu_day_of_birth
+    o.raw()
+    calendar_block(o, hindu_day_of_birth(chart), loc)
+
     _title(o, "Numerology", "সংখ্যাতত্ত্ব", "अंक ज्योतिष")
     nu = chart["numerology"]
     for key, en_l, bn_l, hi_l in (("mulank", "Birth number (Mulank)", "মূলাঙ্ক", "मूलांक"),
@@ -386,6 +390,9 @@ def render_panchang(d: date, loc: Location, lang: str) -> str:
               f"अभिजित मुहूर्त: {span('abhijit')}   (परंपरा में शुभ)")
         o.add(f"Brahma Muhurta: {span('brahma_muhurta')}", f"ব্রাহ্ম মুহূর্ত: {span('brahma_muhurta')}", f"ब्रह्म मुहूर्त: {span('brahma_muhurta')}")
     o.raw()
+    from .report_calendar import calendar_block
+    o.raw()
+    calendar_block(o, d, loc)
     _disclaimer(o)
     o.raw()
     _credit(o)

@@ -27,3 +27,12 @@ traditional ideas, written for this project in English and Bengali.
 - Past-sky cross-check of the Sun: Meeus, *Astronomical Algorithms*, ch. 27 equinox formulas (independent of the planetary tables).
 - Julian/Gregorian conversion: Julian Day Number algorithms (Fliegel & Van Flandern; Meeus ch. 7).
 - Name syllables (namakshar), Ashtakavarga tables, divisional-chart rules: classical Parashari texts (Brihat Parashara Hora Shastra), checked by tests.
+
+
+## Added for the Hindu calendar
+- drikpanchang.com: 2026 Hindu festival list for New Delhi, Malayalam calendar page (used as comparison references, fetched 2026-11-18).
+- dekhopanchang.com: Bangladesh revised Bangla month table; Tamil month table (approximate, not used as truth).
+- hindupad.com: Pohela Boishakh 2026; 2027 festival list. kundligpt.com: 2025 festival list.
+- panchangbodh.com: published Lahiri charts of Gandhi, Modi, Tagore.
+- Method sources: Dharmashastra rules as summarised by drikpanchang (vyapti of tithi in udaya, madhyahna, aparahna, pradosha, nishitha), Bhadra (Vishti) karana
+  rule, Indian National Calendar (Calendar Reform Committee 1957), Bangla Academy revised calendar (1966/1987).

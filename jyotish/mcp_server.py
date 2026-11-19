@@ -42,7 +42,11 @@ INSTRUCTIONS = (
     "(9) HISTORICAL PEOPLE (e.g. Genghis Khan): you supply the birth date and place from your own knowledge, say clearly when the date is "
     "uncertain or disputed (try each candidate if useful), pass dates as historians write them (before 15 Oct 1582 the engine reads them as "
     "Julian and converts; use calendar=julian for Old-Style dates after 1582), and leave the time out if unknown. Use jyotish_age for ages. "
-    "Never present an uncertain historical date or an unknown birth time as fact."
+    "Never present an uncertain historical date or an unknown birth time as fact. "
+    "(10) HINDU CALENDAR: for 'which Hindu month / paksha / tithi / Vikram or Shaka year / Bengali, Tamil, Malayalam date / which festival' "
+    "call jyotish_hindu_calendar; for festival dates of a year (Diwali, Holi, Durga Puja days, Ekadashis...) call jyotish_festivals. "
+    "Never recall festival dates from memory. The method is Drik (modern ephemeris); where the result lists alternative_dates, tell the "
+    "person that different almanacs (Smarta/Vaishnava, regional) may use that other day, and say which place the dates are for."
 )
 
 _PLACE_PROPS = {
@@ -79,6 +83,14 @@ TOOLS = [
      "description": "Everything that happens in the sky on one local day: exact moments of New/Full/Quarter Moon, sign changes of all grahas (Sun's = Sankranti), retrograde/direct turns, and the full tithi, nakshatra and yoga timeline with start and end times. Use for 'what happened in the sky on that date'. Eclipses are not included.",
      "inputSchema": {"type": "object", "properties": {"date": {"type": "string", "description": "YYYY-MM-DD, default today."},
                                                       **_PLACE_PROPS, **_FORMAT_PROPS}}},
+    {"name": "jyotish_hindu_calendar",
+     "description": "The Hindu calendar the way Indian panchang-makers reckon it, for one date and place: lunar month (Amanta and Purnimanta, Adhika/extra month flagged), paksha, tithi (with vriddhi/kshaya), Vikram Samvat, Shaka, Kali Yuga, 60-year Samvatsara, Ritu, Ayana, Bengali (West Bengal and Bangladesh), Tamil, Malayalam (Kollam), Odia and Indian National (Saka) dates, and the festivals of that day. Use for 'what is the Hindu date / month / year / which festival today'.",
+     "inputSchema": {"type": "object", "properties": {"date": {"type": "string", "description": "Any common date form, default today."},
+                                                      **_PLACE_PROPS, **_FORMAT_PROPS}}},
+    {"name": "jyotish_festivals",
+     "description": "Dates of Hindu festivals (Diwali, Holi, Durga Puja days, Ganesh Chaturthi, Janmashtami, Shivaratri, Rama Navami ...), every Ekadashi with its name, Purnima, Amavasya and the 12 Sankrantis for a Gregorian year and place, by the traditional tithi rules. Where almanacs differ by a day, alternative_dates lists the other date.",
+     "inputSchema": {"type": "object", "properties": {"year": {"type": "integer", "description": "Gregorian year, default this year."},
+                                                      **_PLACE_PROPS, **_FORMAT_PROPS}}},
     {"name": "jyotish_age",
      "description": "Exact age (years, months, days, total days, weekday of birth) between a birth date and another date (default today), for anyone in history. Dates before 15 Oct 1582 are read in the Julian calendar. Use for 'how old was X' or 'how old would X be today'.",
      "inputSchema": {"type": "object", "required": ["birth"], "properties": {
@@ -106,6 +118,14 @@ def call_tool(name: str, a: Dict[str, Any]) -> str:
         if fmt == "text":
             return api.report("panchang", lang, date=a.get("date"), **place)
         return json.dumps(api.panchang(a.get("date"), **place), ensure_ascii=False, indent=1)
+    if name == "jyotish_hindu_calendar":
+        if fmt == "text":
+            return api.report("calendar", lang, date=a.get("date"), **place)
+        return json.dumps(api.hindu_calendar(a.get("date"), **place), ensure_ascii=False, indent=1)
+    if name == "jyotish_festivals":
+        if fmt == "text":
+            return api.report("festivals", lang, year=a.get("year"), **place)
+        return json.dumps(api.festivals(a.get("year"), **place), ensure_ascii=False, indent=1)
     if name == "jyotish_age":
         if "birth" not in a:
             raise ValueError("birth date is required")

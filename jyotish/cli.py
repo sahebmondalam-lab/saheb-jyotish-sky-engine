@@ -64,6 +64,14 @@ def main(argv=None) -> int:
     ag.add_argument("--lang", choices=LANGS, default="both")
     ag.add_argument("--json", action="store_true")
 
+    hc = sub.add_parser("calendar", help="Hindu calendar of a day: lunar month (adhika), paksha, tithi, Vikram/Shaka/Kali, samvatsara, ritu, Bengali/Tamil/Malayalam/Odia/National dates, festivals")
+    hc.add_argument("--date", default=date.today().isoformat(), help="date, any common form (default today)")
+    _add_place_args(hc)
+
+    fe = sub.add_parser("festivals", help="Hindu festivals, Ekadashi, Purnima, Amavasya and Sankranti dates of a year")
+    fe.add_argument("--year", type=int, default=date.today().year)
+    _add_place_args(fe)
+
     sub.add_parser("places", help="list built-in places (JSON)")
     sub.add_parser("mcp", help="run as an MCP server over stdio, so AI apps can use this engine as a tool")
 
@@ -85,6 +93,18 @@ def main(argv=None) -> int:
                 _dump(api.panchang(args.date, **place))
             else:
                 sys.stdout.write(api.report("panchang", args.lang, date=args.date, **place))
+            return 0
+        if args.cmd == "calendar":
+            if args.json:
+                _dump(api.hindu_calendar(args.date, **place))
+            else:
+                sys.stdout.write(api.report("calendar", args.lang, date=args.date, **place))
+            return 0
+        if args.cmd == "festivals":
+            if args.json:
+                _dump(api.festivals(args.year, **place))
+            else:
+                sys.stdout.write(api.report("festivals", args.lang, year=args.year, **place))
             return 0
         if args.cmd == "age":
             if args.json:

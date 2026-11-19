@@ -43,6 +43,10 @@ python3 -m jyotish sky --date 2026-11-16 --time 10:00 --place kolkata --lang hi
 
 # Panchang for a day
 python3 -m jyotish panchang --date 2026-11-16 --place kolkata --lang en
+
+# Hindu calendar of a day (lunar month, Adhika, Vikram/Shaka, Bengali/Tamil/Malayalam dates, festivals) and festival list of a year
+python3 -m jyotish calendar --date 2026-11-08 --place delhi --lang en
+python3 -m jyotish festivals --year 2026 --place delhi --lang en
 # everything that happens in the sky on one day: Purnima/Amavasya moments, Sankranti, retrograde turns, tithi/nakshatra/yoga timeline
 python3 -m jyotish day --date 1992-01-27 --place kolkata --lang all
 # full janma kundli: North/South Indian charts, Navamsa, 16 divisional charts, Ashtakavarga, karakas, dasha, yogas, remedies
