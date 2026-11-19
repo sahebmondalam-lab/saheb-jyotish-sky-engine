@@ -56,7 +56,8 @@ class PlaceTests(unittest.TestCase):
         self.assertEqual(loc.tz_name, "Asia/Kolkata")
         self.assertTrue(loc.notes)                                   # says IST was assumed
         paris = location.resolve_location(lat=48.85, lon=2.35)
-        self.assertTrue(any("daylight" in n for n in paris.notes))   # warns about approximate zone
+        self.assertEqual(paris.tz_name, "Europe/Paris")              # zone (with daylight saving) found from coordinates
+        self.assertTrue(any("automatically" in n for n in paris.notes))
 
     def test_unknown_place_offline_gives_helpful_error(self):
         with mock.patch.dict(os.environ, {"JYOTISH_OFFLINE": "1"}):

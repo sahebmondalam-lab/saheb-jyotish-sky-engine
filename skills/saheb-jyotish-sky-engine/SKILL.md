@@ -19,7 +19,7 @@ If this skill sits inside the cloned repository, run commands from the repositor
 - Hindu calendar of a day (lunar month, Adhika, paksha, tithi, Vikram/Shaka/Kali, Samvatsara, Bengali/Tamil/Malayalam/Odia dates, festivals): `python3 -m jyotish calendar --date YYYY-MM-DD --place <city> --json`
 - Festival dates of a year: `python3 -m jyotish festivals --year YYYY --place <city> --json` (if `alternative_dates` is shown, tell the user other almanacs may use that day)
 - Events of a day (Purnima/Amavasya time, Sankranti, retrograde turns, full tithi/nakshatra/yoga timeline): `python3 -m jyotish day --date YYYY-MM-DD --place <city> --json`
-- Cities: `python3 -m jyotish places`. Other place: `--lat <deg> --lon <deg east-positive> --tz <IANA or +05:30>`
+- Cities: `python3 -m jyotish places`. Any other place: the name is looked up online; if that fails give `--lat <deg> --lon <deg east-positive>` yourself (from your knowledge or a web search) - the time zone is found automatically offline (`--tz` optional)
 
 ## Rules
 1. Ask for missing birth date, exact local birth time and birth place; say which place/time zone you assumed.

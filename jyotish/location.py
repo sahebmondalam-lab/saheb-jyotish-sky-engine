@@ -106,7 +106,104 @@ def geocode(name: str) -> Optional[dict]:
             "lat": float(r["latitude"]), "lon": float(r["longitude"]), "tz": r.get("timezone")}
 
 
+_EXTRA_ANCHORS = [   # zone.tab has one city per zone; these stop border towns of big countries snapping to a neighbour
+    (23.83, 91.28, "Asia/Kolkata"), (26.14, 91.74, "Asia/Kolkata"), (24.82, 93.94, "Asia/Kolkata"),
+    (27.33, 88.61, "Asia/Kolkata"), (11.62, 92.73, "Asia/Kolkata"),
+    (23.46, 91.18, "Asia/Dhaka"), (23.96, 91.11, "Asia/Dhaka"), (23.02, 91.40, "Asia/Dhaka"), (22.82, 91.10, "Asia/Dhaka"),
+    (25.75, 89.25, "Asia/Dhaka"), (25.63, 88.64, "Asia/Dhaka"), (26.85, 89.38, "Asia/Thimphu"), (27.47, 89.64, "Asia/Thimphu"), (34.08, 74.80, "Asia/Kolkata"),
+    (34.15, 77.58, "Asia/Kolkata"), (28.61, 77.21, "Asia/Kolkata"), (19.08, 72.88, "Asia/Kolkata"),
+    (13.08, 80.27, "Asia/Kolkata"), (8.52, 76.94, "Asia/Kolkata"), (22.57, 88.36, "Asia/Kolkata"),
+    (26.85, 80.95, "Asia/Kolkata"), (23.26, 77.41, "Asia/Kolkata"), (21.15, 79.09, "Asia/Kolkata"),
+    (29.65, 91.10, "Asia/Shanghai"), (29.27, 88.88, "Asia/Shanghai"), (31.48, 92.05, "Asia/Shanghai"), (36.62, 101.78, "Asia/Shanghai"),
+    (39.90, 116.40, "Asia/Shanghai"), (45.75, 126.63, "Asia/Shanghai"), (23.13, 113.26, "Asia/Shanghai"),
+    (25.04, 102.71, "Asia/Shanghai"), (30.57, 104.07, "Asia/Shanghai"), (34.30, 108.94, "Asia/Shanghai"),
+    (31.63, 74.87, "Asia/Kolkata"), (23.02, 72.57, "Asia/Kolkata"), (25.59, 85.14, "Asia/Kolkata"),
+    (20.30, 85.82, "Asia/Kolkata"), (15.30, 74.12, "Asia/Kolkata"), (12.97, 77.59, "Asia/Kolkata"),
+]
+_ZONE_POINTS: Optional[list] = None
+
+
+def _iso6709(c: str):
+    m = re.fullmatch(r"([+-])(\d{2})(\d{2})(\d{2})?([+-])(\d{3})(\d{2})(\d{2})?", c)
+    if not m:
+        return None
+    la = int(m.group(2)) + int(m.group(3)) / 60 + int(m.group(4) or 0) / 3600
+    lo = int(m.group(6)) + int(m.group(7)) / 60 + int(m.group(8) or 0) / 3600
+    return (-la if m.group(1) == "-" else la), (-lo if m.group(5) == "-" else lo)
+
+
+def _zone_points() -> list:
+    """(lat, lon, IANA zone) reference points from the system tz database (zone.tab), plus a few extra anchors."""
+    global _ZONE_POINTS
+    if _ZONE_POINTS is not None:
+        return _ZONE_POINTS
+    pts: list = []
+    try:
+        import zoneinfo
+        paths = list(zoneinfo.TZPATH)
+        try:
+            import tzdata  # type: ignore  # noqa: F401
+        except Exception:
+            pass
+        for base in paths:
+            f = os.path.join(base, "zone.tab")
+            if os.path.exists(f):
+                with open(f, encoding="utf-8") as fh:
+                    for line in fh:
+                        if line.startswith("#") or not line.strip():
+                            continue
+                        parts = line.rstrip("\n").split("\t")
+                        if len(parts) >= 3:
+                            c = _iso6709(parts[1])
+                            if c:
+                                pts.append((c[0], c[1], parts[2]))
+                break
+    except Exception:
+        pts = []
+    if pts:
+        pts.extend(_EXTRA_ANCHORS)
+        pts.extend((la, lo, tzn) for (la, lo, tzn) in PLACES.values())   # every built-in place is a known-good anchor too
+    _ZONE_POINTS = pts
+    return pts
+
+
+def nearest_zone(lat: float, lon: float) -> Optional[str]:
+    """IANA zone of the nearest reference city. Works offline for any coordinates on Earth; can be wrong close to a border."""
+    from math import radians, sin, cos, asin, sqrt
+    best, bd = None, 1e18
+    for (a, o, z) in _zone_points():
+        dl = radians(o - lon)
+        h = sin(radians(a - lat) / 2) ** 2 + cos(radians(lat)) * cos(radians(a)) * sin(dl / 2) ** 2
+        d = 2 * asin(min(1.0, sqrt(h)))
+        if d < bd:
+            best, bd = z, d
+    return best
+
+
+def geocode_osm(name: str) -> Optional[dict]:
+    """Second online geocoder (OpenStreetMap Nominatim) - knows villages and small towns Open-Meteo may miss. No time zone returned."""
+    if os.environ.get("JYOTISH_OFFLINE"):
+        return None
+    url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + urllib.parse.quote(name)
+    try:
+        res = _http_get_json(url)
+    except Exception:
+        return None
+    if not res:
+        return None
+    r = res[0]
+    return {"name": r.get("display_name") or name, "lat": float(r["lat"]), "lon": float(r["lon"]), "tz": None}
+
+
 def _approx_tz(lat: float, lon: float):
+    z = nearest_zone(lat, lon)
+    if z:
+        try:
+            return ZoneInfo(z), z, [
+                f"Time zone not given: found automatically from the coordinates ({z}, nearest reference city of the time-zone database, "
+                "offline). Correct in almost every case; only a place right on a zone border could differ - give tz= to be certain."]
+        except Exception:
+            pass
     if 6 <= lat <= 36 and 68 <= lon <= 98:
         return ZoneInfo("Asia/Kolkata"), "Asia/Kolkata", ["Time zone not given: assumed India (IST, UTC+05:30)."]
     hours = round(lon / 15.0 * 2) / 2.0
@@ -162,12 +259,23 @@ def _resolve(place: Optional[str] = None, lat: Optional[float] = None,
             la, lo, tzn = PLACES[key]
             tzobj, tzname = parse_tz(tz or tzn)
             return Location(key.title(), la, lo, tzobj, tzname)
-        g = geocode(normalize(place).split(",")[0] if "," not in place else place) or geocode(normalize(place).split(",")[0])
+        first = normalize(place).split(",")[0]
+        g = geocode(normalize(place) if "," in place else first) or geocode(first)
+        src = "Open-Meteo"
+        if not g:
+            g = geocode_osm(normalize(place)) or geocode_osm(first)
+            src = "OpenStreetMap"
         if g:
-            tzobj, tzname = parse_tz(tz or g["tz"]) if (tz or g["tz"]) else _approx_tz(g["lat"], g["lon"])[:2]
-            return Location(g["name"], g["lat"], g["lon"], tzobj, tzname, ["Place found through the online Open-Meteo geocoder; please check it is the right place."])
-        raise ValueError(f"Unknown place '{place}' (and it could not be looked up online). Give latitude, longitude and "
-                         "timezone instead (e.g. lat=26.7271 lon=88.3953 tz=Asia/Kolkata), or pick a built-in place with jyotish_places.")
+            notes = [f"Place found through the online {src} geocoder; please check it is the right place."]
+            if tz or g["tz"]:
+                tzobj, tzname = parse_tz(tz or g["tz"])
+            else:
+                tzobj, tzname, n2 = _approx_tz(g["lat"], g["lon"])
+                notes += n2
+            return Location(g["name"], g["lat"], g["lon"], tzobj, tzname, notes)
+        raise ValueError(f"Unknown place '{place}' (and it could not be looked up online). Give latitude and longitude instead "
+                         "(east positive, e.g. lat=22.10 lon=88.30); the time zone is then found automatically. "
+                         "An AI assistant should supply the coordinates itself from its own knowledge or a web search.")
     raise ValueError("Give a place name, or latitude and longitude (east positive) and a timezone.")
 
 

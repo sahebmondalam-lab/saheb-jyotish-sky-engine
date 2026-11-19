@@ -134,7 +134,7 @@ def _loc_block(loc: Location) -> Dict:
 def places() -> Dict:
     return {"credit": credit_block(),
             "built_in_places": {k: {"latitude": v[0], "longitude_east": v[1], "timezone": v[2]} for k, v in sorted(D.PLACES.items())},
-            "note": "Any other place: pass latitude, longitude (EAST positive) and timezone (IANA name like Asia/Kolkata, or offset like +05:30)."}
+            "note": "Any other place: pass the name (looked up online) or latitude and longitude (EAST positive); the time zone is found automatically offline. timezone (IANA name or +05:30) is optional."}
 
 
 def sky(date: Optional[str] = None, time: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None,

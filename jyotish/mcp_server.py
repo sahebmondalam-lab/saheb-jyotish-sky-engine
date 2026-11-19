@@ -50,7 +50,7 @@ INSTRUCTIONS = (
 )
 
 _PLACE_PROPS = {
-    "place": {"type": "string", "description": "Any place name (built-in list incl. Bengali/Hindi spellings; other places are looked up online when possible), or a 'lat,lon' pair. For certainty give latitude + longitude + timezone instead."},
+    "place": {"type": "string", "description": "Any place name (built-in list incl. Bengali/Hindi spellings; other places are looked up online when possible), or a 'lat,lon' pair. For certainty give latitude + longitude (timezone is then found automatically; add it only on a zone border)."},
     "calendar": {"type": "string", "enum": ["auto", "julian", "gregorian"], "description": "How to read the date. auto (default) = Julian before 15 Oct 1582, Gregorian after. Use julian for Old-Style dates after 1582 (England before 1752, Russia before 1918) and gregorian to force the modern calendar."},
     "latitude": {"type": "number", "description": "Latitude in degrees, north positive."},
     "longitude": {"type": "number", "description": "Longitude in degrees, EAST positive (Kolkata is +88.36)."},

@@ -36,8 +36,11 @@ computer and paste the JSON back. **Never invent the numbers yourself.**
 - **Any date, time, place, language.** The user can give any date (past or future), any time and any place, written any way; YOU convert
   it, the tool is forgiving: dates like `27 Jan 1992`, `27/01/1992`, `১৯৯২-০১-২৭`, `27 जनवरी 1992`; times like `2:30 PM`, `রাত ১০:৩০`, `शाम 6 बजे`;
   places in English/Bengali/Hindi spelling or `"22.57,88.36"`. Never make the user reformat.
-- A place not in the list: pass `--lat <deg> --lon <deg EAST positive> --tz <IANA name or +05:30>` (find them yourself). When the machine is
-  online, unknown place names are looked up automatically (Open-Meteo); set `JYOTISH_OFFLINE=1` to forbid network use.
+- **Any place on Earth, village included**: never refuse or ask the user for a time zone. Give the place name; when online it is looked up
+  automatically (Open-Meteo, then OpenStreetMap). If that fails (offline, or not found), find the latitude and longitude yourself from your own
+  knowledge or a web search and pass `--lat <deg> --lon <deg EAST positive>`. The **time zone is then found automatically and offline** from the
+  coordinates (with daylight-saving history); pass `--tz` only for a place right on a zone border. Say in the answer which coordinates you used.
+  Set `JYOTISH_OFFLINE=1` to forbid network use.
 - **Historical people / any year 1–9999**: you supply the birth date and place from your own knowledge and say when it is disputed
   (Genghis Khan's birth year alone is given as 1155, 1162 or 1167: run the candidates you cite). Dates before 15 Oct 1582 are read as Julian and
   converted automatically; add `--calendar julian` for Old-Style dates later than that (England before 1752, Russia before 1918).

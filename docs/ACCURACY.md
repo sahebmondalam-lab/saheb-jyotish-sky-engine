@@ -57,8 +57,13 @@ The "published" dates above were taken from widely available panchang/almanac da
 - Dates/times are parsed in many spellings (English/Bengali/Hindi digits and words); an ambiguous `03/04/2001` is read day-first and a note says so.
 - Unknown place names are looked up online through Open-Meteo when the machine has internet. This path is tested only with a mocked
   response (the author's sandbox had no internet), so please try it once and report problems. Set `JYOTISH_OFFLINE=1` to disable it.
-- Unknown time zone: India is assumed for places in India, otherwise a longitude-based offset is used and a warning says daylight saving
-  and history are ignored. Give an IANA zone for exact results.
+- Time zone from coordinates (offline): when only latitude/longitude are given, the zone of the nearest reference city of the system
+  time-zone database (`zone.tab`, plus about 40 extra anchors around India, Bangladesh, Bhutan, Nepal and China) is used, so daylight saving
+  and historical rules apply. Checked on all 96 built-in places and on 26 independent towns (all correct), but this is a nearest-neighbour
+  method, not border polygons: a place right on a zone border (for example a town next to the India-Bhutan or India-Bangladesh line) can get
+  the neighbour's zone. A note says the zone was found automatically; give `tz` to be certain. If the tz database is missing from the
+  machine, India is assumed for places in India, otherwise a longitude-based offset is used with a warning.
+- Place names are tried in Open-Meteo, then OpenStreetMap Nominatim; both are tested only with mocked responses.
 - Unknown birth time: noon is used and the lagna/houses are flagged unreliable.
 - Years outside 1800-2050 work (1300 and 2100 are tested) but carry a warning: Moon/Sun/tithi stay good, outer planets can be off by degrees.
 
