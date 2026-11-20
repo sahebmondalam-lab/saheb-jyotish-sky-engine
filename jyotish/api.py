@@ -219,6 +219,106 @@ def festivals(year: Optional[int] = None, place: Optional[str] = None, lat: Opti
             "festivals": [_fest_json(f) for f in HC.festivals_for_year(y, loc)]}
 
 
+def _ecl_json(e: Dict) -> Dict:
+    return {k: v for k, v in e.items() if k not in ("contacts_jd", "jd_ut")} | {"jd_ut": round(e["jd_ut"], 5)}
+
+
+def _grahan_block(c: Dict) -> Dict:
+    from . import eclipses as EC
+    pl = c["planets"]
+    out: Dict = {"yoga": EC.grahan_dosha(pl["Sun"]["sidereal"], pl["Moon"]["sidereal"], pl["Rahu"]["sidereal"], pl["Ketu"]["sidereal"])}
+    try:
+        nb = EC.eclipse_near_birth(c["meta"]["jd_ut"])
+        out["eclipses_near_birth"] = {k: (_ecl_json(v) if isinstance(v, dict) else v) for k, v in nb.items()}
+    except (OverflowError, ValueError):
+        out["eclipses_near_birth"] = None
+    return out
+
+
+def _shadbala_json(c: Dict, loc: Location) -> Dict:
+    from . import shadbala as SB
+    r = SB.shadbala(c, loc)
+    rows = []
+    for x in r["planets"]:
+        rows.append({**_grah(x["planet"]), "total_virupa": round(x["total_virupa"], 2), "total_rupa": round(x["total_rupa"], 3),
+                     "required_rupa": round(x["required_rupa"], 3), "ratio": round(x["ratio"], 3), "strong": x["strong"],
+                     "sthana": {k: round(v, 2) for k, v in x["sthana"].items()}, "dig": round(x["dig"], 2),
+                     "kala": {k: round(v, 2) for k, v in x["kala"].items()}, "cheshta": round(x["cheshta"], 2),
+                     "naisargika": round(x["naisargika"], 2), "drik": round(x["drik"], 2)})
+    return {"unit": r["unit"], "planets": rows, "ranking": r["ranking"], "strongest": r["strongest"], "weakest": r["weakest"],
+            "context": r["context"], "note": r["note"]}
+
+
+def eclipses(year: Optional[int] = None, date: Optional[str] = None, count: int = 4, kind: Optional[str] = None,
+             place: Optional[str] = None, lat: Optional[float] = None, lon: Optional[float] = None, tz: Optional[str] = None,
+             calendar: Optional[str] = None) -> Dict:
+    """Solar and lunar eclipses: all of a year (year=...) or the next `count` after a date (default today). With a place, each eclipse
+    also says whether it is visible there."""
+    from . import eclipses as EC
+    loc = None
+    if place or lat is not None or lon is not None:
+        loc = resolve_location(place, lat, lon, tz, calendar)
+        _prep(loc, int(year) if year else _today(loc).year)
+    if kind not in (None, "solar", "lunar"):
+        raise ValueError("kind must be 'solar' or 'lunar' (or leave it out)")
+    if year:
+        res = EC.eclipses_in_year(int(year), kind, loc)
+        what = {"year": int(year)}
+    else:
+        if date:
+            d = resolve_date(date, (loc.calendar if loc else "auto"), [])
+            start = d.isoformat()
+        else:
+            start = datetime.now(timezone.utc).date().isoformat()
+        res = EC.next_eclipses(start, max(1, min(int(count), 40)), kind, loc)
+        what = {"after": start, "count": len(res)}
+    out = {"credit": credit_block(), "kind": "eclipses", **what, "eclipses": [_ecl_json(e) for e in res],
+           "method": "Computed from Sun-Moon geometry (times UTC, greatest eclipse). Visibility is geometric (Moon/Sun above the horizon)."}
+    if loc:
+        out["place"] = _loc_block(loc)
+        out.update(_warnings(loc))
+    return out
+
+
+def _person_chart(p: Dict, calendar: Optional[str]):
+    if not p or "date" not in p:
+        raise ValueError("each person needs at least a birth date (and a time and place for a reliable Moon)")
+    loc = resolve_location(p.get("place"), p.get("lat", p.get("latitude")), p.get("lon", p.get("longitude")), p.get("tz", p.get("timezone")), calendar)
+    unknown = is_unknown_time(p.get("time"))
+    local_dt = make_local_datetime(p["date"], "12:00" if unknown else p["time"], loc)
+    _prep(loc, local_dt.year, unknown)
+    c = build_chart(local_dt, loc, p.get("name", ""))
+    c["meta"]["birth_time_known"] = not unknown
+    return c, loc, unknown
+
+
+def guna_milan(person_a: Dict, person_b: Dict, a_role: str = "groom", calendar: Optional[str] = None) -> Dict:
+    """Ashtakoota Guna Milan (36 points) and Manglik comparison of two people. Each person: dict with date, time, place (or lat/lon/tz), name."""
+    from . import matching as MT
+    ca, la, ua = _person_chart(person_a, calendar)
+    cb, lb, ub = _person_chart(person_b, calendar)
+    res = MT.match(ca, cb, a_role=a_role)
+    warns = []
+    for tag, un in (("A", ua), ("B", ub)):
+        if un:
+            warns.append(f"Person {tag}: birth time unknown, noon was used. The Moon moves about 13 degrees a day, so the nakshatra and every koota may be wrong; Manglik needs the lagna.")
+    return {"credit": credit_block(), "kind": "guna_milan", **({"warnings": warns} if warns else {}), **res,
+            "persons": {"A": _loc_block(la), "B": _loc_block(lb)}}
+
+
+def shadbala(date: str, time: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None, lon: Optional[float] = None,
+             tz: Optional[str] = None, name: str = "", calendar: Optional[str] = None) -> Dict:
+    """Shadbala (six-fold strength) of the seven planets for a birth chart; needs the birth time."""
+    if is_unknown_time(time):
+        raise ValueError("Shadbala needs the birth time (it depends on the lagna, the hour and the Sun's rise/set)")
+    loc = resolve_location(place, lat, lon, tz, calendar)
+    local_dt = make_local_datetime(date, time, loc)
+    _prep(loc, local_dt.year)
+    c = build_chart(local_dt, loc, name)
+    return {"credit": credit_block(), "kind": "shadbala", **_warnings(loc), "input": {"local_time": c["meta"]["local_time"], "place": _loc_block(loc)},
+            **_shadbala_json(c, loc)}
+
+
 def day_events(date: Optional[str] = None, place: Optional[str] = None, lat: Optional[float] = None,
                lon: Optional[float] = None, tz: Optional[str] = None, calendar: Optional[str] = None) -> Dict:
     """Moon-phase moments, sign changes (sankranti), retrograde/direct turns and tithi/nakshatra/yoga timeline for one local day."""
@@ -232,7 +332,7 @@ def day_events(date: Optional[str] = None, place: Optional[str] = None, lat: Opt
     def seg(x, namer):
         return {**namer(x["index"]), "starts": _iso(x["start"], z), "ends": _iso(x["end"], z)}
     return {"credit": credit_block(), "kind": "day_events", "date": d.isoformat(), "place": _loc_block(loc),
-            "not_included": "eclipses (Moon latitude not computed)", **_warnings(loc),
+            "eclipses": "use the eclipses tool", **_warnings(loc),
             "moon_phases": [{**_n(D.PHASE_EVENT[x["phase_index"]]), "at": _iso(x["jd"], z)} for x in e["moon_phases"]],
             "sign_changes": [{"planet": _grah(x["planet"]), "from": _sign(x["from_sign"]), "to": _sign(x["to_sign"]),
                               "at": _iso(x["jd"], z), "is_sankranti": x["planet"] == "Sun"} for x in e["ingresses"]],
@@ -350,6 +450,12 @@ def kundli(date: str, time: Optional[str] = None, place: Optional[str] = None, l
     from .report_calendar import hindu_day_of_birth
     _hd = hindu_day_of_birth(c)
     out["hindu_calendar"] = {**_HC.safe_describe(_hd, loc), "hindu_day_note": "Hindu day = sunrise to sunrise; a birth before local sunrise belongs to the previous civil date's Hindu day."}
+    out["grahan"] = _grahan_block(c)
+    if not unknown:
+        try:
+            out["shadbala"] = _shadbala_json(c, loc)
+        except (ValueError, OverflowError) as e:
+            out["shadbala"] = {"available": False, "reason": str(e)}
     out["divisional_charts"] = {f"D{n}": {"name": dict(zip(("en", "bn", "hi"), VARGA_NAME[n])), "lagna": _sign(v["lagna"]),
                                           "planets": {g: _sign(sg) for g, sg in v["planets"].items()}} for n, v in da["vargas"].items()}
     mo = c["planets"]["Moon"]
@@ -402,6 +508,22 @@ def report(kind: str, lang: str = "both", **kw) -> str:
         o.add(f"Dates used (Gregorian): {a['birth_gregorian']} -> {a['on_gregorian']}", f"ব্যবহৃত তারিখ (গ্রেগরিয়ান): {a['birth_gregorian']} -> {a['on_gregorian']}",
               f"प्रयुक्त तिथियाँ (ग्रेगोरियन): {a['birth_gregorian']} -> {a['on_gregorian']}")
         return o.text()
+    if kind == "guna_milan":
+        from . import matching as MT
+        r = guna_milan(kw["person_a"], kw["person_b"], kw.get("a_role", "groom"), kw.get("calendar"))
+        text = MT.render(r, lang)
+        if r.get("warnings"):
+            text += "\n".join("* " + w for w in r["warnings"]) + "\n"
+        return text
+    if kind == "eclipses" and not _has_place(kw):
+        from . import eclipses as EC
+        from .report_more import render_eclipses
+        if kw.get("year"):
+            lst, ttl = EC.eclipses_in_year(int(kw["year"]), kw.get("ecl_kind")), f"Eclipses of {int(kw['year'])}"
+        else:
+            start = resolve_date(kw["date"], kw.get("calendar") or "auto", []).isoformat() if kw.get("date") else datetime.now(timezone.utc).date().isoformat()
+            lst, ttl = EC.next_eclipses(start, int(kw.get("count", 4)), kw.get("ecl_kind")), f"Next eclipses after {start}"
+        return render_eclipses(lst, ttl, lang, None)
     loc = resolve_location(kw.get("place"), kw.get("lat"), kw.get("lon"), kw.get("tz"), kw.get("calendar"))
     if kind == "panchang":
         d = resolve_date(kw["date"], loc.calendar, loc.notes) if kw.get("date") else _today(loc)
@@ -434,8 +556,33 @@ def report(kind: str, lang: str = "both", **kw) -> str:
         local_dt = make_local_datetime(kw["date"], "12:00" if unknown else kw["time"], loc)
         _prep(loc, local_dt.year, unknown)
         c = build_chart(local_dt, loc, kw.get("name", ""))
+        c["meta"]["birth_time_known"] = not unknown
         njd = now_jd(kw.get("now"))
         years = float(kw.get("years", 5.0))
         fc = TR.forecast(c["moon_sign"], njd, years) if years > 0 else None
         return render_kundli(c, fc, lang, njd, loc)
-    raise ValueError("kind must be kundli, panchang, sky, day, calendar or festivals")
+    if kind == "eclipses":
+        from . import eclipses as EC
+        from .report_more import render_eclipses
+        if kw.get("year"):
+            lst = EC.eclipses_in_year(int(kw["year"]), kw.get("ecl_kind"), loc if _has_place(kw) else None)
+            ttl = f"Eclipses of {int(kw['year'])}"
+        else:
+            start = resolve_date(kw["date"], loc.calendar, loc.notes).isoformat() if kw.get("date") else datetime.now(timezone.utc).date().isoformat()
+            lst = EC.next_eclipses(start, int(kw.get("count", 4)), kw.get("ecl_kind"), loc if _has_place(kw) else None)
+            ttl = f"Next eclipses after {start}"
+        return render_eclipses(lst, ttl, lang, loc if _has_place(kw) else None)
+    if kind == "shadbala":
+        from .report_more import render_shadbala
+        local_dt = make_local_datetime(kw["date"], kw["time"], loc) if not is_unknown_time(kw.get("time")) else None
+        if local_dt is None:
+            raise ValueError("Shadbala needs the birth time")
+        _prep(loc, local_dt.year)
+        from . import shadbala as SB
+        c = build_chart(local_dt, loc, kw.get("name", ""))
+        return render_shadbala(SB.shadbala(c, loc), lang)
+    raise ValueError("kind must be kundli, panchang, sky, day, calendar, festivals, eclipses, guna_milan or shadbala")
+
+
+def _has_place(kw: Dict) -> bool:
+    return bool(kw.get("place") or kw.get("lat") is not None or kw.get("lon") is not None)

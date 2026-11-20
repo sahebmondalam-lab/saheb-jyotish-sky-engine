@@ -121,3 +121,21 @@ Published charts (cross-check, Lahiri): Gandhi (7:45 LMT Porbandar), Modi (11:00
 panchangbodh.com. Every planet (Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu) agrees within 0.1 deg (mostly within 0.03 deg) and all three
 lagna signs agree. That source is software, so it shows agreement with another program, not with a manuscript chart. Birth times of Gandhi and Modi
 are disputed in the literature; the lagna depends on which time you trust.
+
+## Eclipses (Grahan), Guna Milan, Shadbala (v0.4)
+- **Eclipses**: found from the Sun-Moon geometry (Moon latitude, distances, semi-diameters, parallax). The list of all eclipses of 2017-2027 (type
+  and date) agrees with the eclipse catalogue as I know it (NASA/timeanddate; I did not fetch it again for this test, so the reference
+  dates and times in `tests/test_eclipses.py` are from memory): 25 eclipses are pinned in the test with date, type and greatest-eclipse time within
+  0.6 h (for example the annular eclipse of 26 Feb 2017 is 14:53 UTC here against 14:54 in the catalogue), and each year has the real count of
+  4-6. Local visibility is geometric (Moon or Sun above the horizon); checked on the eclipses visible from India in 2025-2026. Accuracy falls
+  slowly far from the present (Delta-T), and rare borderline cases (a tiny penumbral eclipse, a hybrid eclipse) can differ. The type
+  decision uses simple Danjon/geocentric limits, not the full Besselian elements.
+- **Guna Milan**: the standard North-Indian 36-point Ashtakoota from the two Moon positions. The tables (yoni matrix, vashya matrix, friendship of sign
+  lords, gana, nadi, varna) were taken from several published sources; where panchangas differ (a few vashya and gana cells, bhakoot/nadi
+  cancellation rules) one common version is used and written in `jyotish/matching.py` next to each table. Not independently verified against a
+  commercial program. It looks only at the two Moons.
+- **Shadbala**: follows Brihat Parashara Hora Shastra ch. 27 (Sthana, Dig, Kala, Cheshta, Naisargika, Drik; the minimum 390/360/300/420/390/330/300
+  virupas). Choices where translations and programs differ: Abda and Masa lords are taken from the real lunar year/month start (not the 360-day
+  arithmetic), Cheshta uses (Seeghrochcha - mean of true and mean longitude) / 3, Sun's Ayana bala is doubled in Kala bala but not in Cheshta,
+  Mercury is benefic unless it shares a sign with Sun, Mars, Saturn, Rahu or Ketu, special aspects are a continuous model, Yuddha bala is not
+  included. I could not compare the totals with a commercial program, so use them to compare planets within one chart, not as exact values.

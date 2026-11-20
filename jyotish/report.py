@@ -321,6 +321,15 @@ def render_kundli(chart: Dict, fc: Optional[Dict], lang: str, now_jd: float, loc
     o.raw()
     calendar_block(o, hindu_day_of_birth(chart), loc)
 
+    from .report_more import grahan_block, shadbala_block
+    grahan_block(o, chart)
+    if chart["meta"].get("birth_time_known", True):
+        try:
+            from . import shadbala as _SB
+            shadbala_block(o, _SB.shadbala(chart, loc))
+        except (ValueError, OverflowError):
+            pass
+
     _title(o, "Numerology", "সংখ্যাতত্ত্ব", "अंक ज्योतिष")
     nu = chart["numerology"]
     for key, en_l, bn_l, hi_l in (("mulank", "Birth number (Mulank)", "মূলাঙ্ক", "मूलांक"),

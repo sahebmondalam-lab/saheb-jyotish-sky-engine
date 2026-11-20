@@ -72,6 +72,33 @@ def main(argv=None) -> int:
     fe.add_argument("--year", type=int, default=date.today().year)
     _add_place_args(fe)
 
+    ec = sub.add_parser("eclipses", help="solar and lunar eclipses: a whole year (--year) or the next ones after a date (default today); with a place, also whether visible there")
+    ec.add_argument("--year", type=int, default=None)
+    ec.add_argument("--date", default=None, help="list the eclipses after this date (default today)")
+    ec.add_argument("--count", type=int, default=4)
+    ec.add_argument("--kind", choices=["solar", "lunar"], default=None)
+    _add_place_args(ec)
+
+    sb = sub.add_parser("shadbala", help="Shadbala: six-fold strength of the seven planets for a birth time and place")
+    sb.add_argument("--date", required=True)
+    sb.add_argument("--time", required=True)
+    sb.add_argument("--name", default="")
+    _add_place_args(sb)
+
+    gm = sub.add_parser("match", help="kundli matching: Ashtakoota Guna Milan (36 points) + Manglik for two people (--date1/--time1/--place1 ... --date2 ...)")
+    for n in ("1", "2"):
+        gm.add_argument(f"--date{n}", required=True)
+        gm.add_argument(f"--time{n}", default=None)
+        gm.add_argument(f"--name{n}", default="")
+        gm.add_argument(f"--place{n}")
+        gm.add_argument(f"--lat{n}", type=float)
+        gm.add_argument(f"--lon{n}", type=float)
+        gm.add_argument(f"--tz{n}")
+    gm.add_argument("--person1-is", choices=["groom", "bride"], default="groom", help="role of person 1 (default groom; Varna/Vashya/Yoni/Gana/Tara depend on it)")
+    gm.add_argument("--calendar", choices=["auto", "julian", "gregorian"], default="auto")
+    gm.add_argument("--lang", choices=LANGS, default="both")
+    gm.add_argument("--json", action="store_true")
+
     sub.add_parser("places", help="list built-in places (JSON)")
     sub.add_parser("mcp", help="run as an MCP server over stdio, so AI apps can use this engine as a tool")
 
@@ -86,6 +113,14 @@ def main(argv=None) -> int:
         if args.cmd == "mcp":
             from .mcp_server import serve
             return serve()
+        if args.cmd == "match":
+            pa = dict(date=args.date1, time=args.time1, name=args.name1, place=args.place1, lat=args.lat1, lon=args.lon1, tz=args.tz1)
+            pb = dict(date=args.date2, time=args.time2, name=args.name2, place=args.place2, lat=args.lat2, lon=args.lon2, tz=args.tz2)
+            if args.json:
+                _dump(api.guna_milan(pa, pb, args.person1_is, args.calendar))
+            else:
+                sys.stdout.write(api.report("guna_milan", args.lang, person_a=pa, person_b=pb, a_role=args.person1_is, calendar=args.calendar))
+            return 0
         place = dict(place=getattr(args, "place", None), lat=getattr(args, "lat", None), lon=getattr(args, "lon", None),
                      tz=getattr(args, "tz", None), calendar=getattr(args, "calendar", "auto"))
         if args.cmd == "panchang":
@@ -93,6 +128,18 @@ def main(argv=None) -> int:
                 _dump(api.panchang(args.date, **place))
             else:
                 sys.stdout.write(api.report("panchang", args.lang, date=args.date, **place))
+            return 0
+        if args.cmd == "eclipses":
+            if args.json:
+                _dump(api.eclipses(args.year, args.date, args.count, args.kind, **place))
+            else:
+                sys.stdout.write(api.report("eclipses", args.lang, year=args.year, date=args.date, count=args.count, ecl_kind=args.kind, **place))
+            return 0
+        if args.cmd == "shadbala":
+            if args.json:
+                _dump(api.shadbala(args.date, args.time, name=args.name, **place))
+            else:
+                sys.stdout.write(api.report("shadbala", args.lang, date=args.date, time=args.time, name=args.name, **place))
             return 0
         if args.cmd == "calendar":
             if args.json:

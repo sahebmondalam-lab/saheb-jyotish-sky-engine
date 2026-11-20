@@ -18,6 +18,9 @@ If this skill sits inside the cloned repository, run commands from the repositor
 - Panchang: `python3 -m jyotish panchang --date YYYY-MM-DD --place <city> --json`
 - Hindu calendar of a day (lunar month, Adhika, paksha, tithi, Vikram/Shaka/Kali, Samvatsara, Bengali/Tamil/Malayalam/Odia dates, festivals): `python3 -m jyotish calendar --date YYYY-MM-DD --place <city> --json`
 - Festival dates of a year: `python3 -m jyotish festivals --year YYYY --place <city> --json` (if `alternative_dates` is shown, tell the user other almanacs may use that day)
+- Eclipses: `python3 -m jyotish eclipses --year YYYY --place <city> --json` (never recall eclipse dates from memory)
+- Marriage matching (Guna Milan + Manglik): `python3 -m jyotish match --date1 .. --time1 .. --place1 .. --date2 .. --time2 .. --place2 .. --json`; say it is a traditional belief, not a basis for a marriage decision
+- Planet strength: `python3 -m jyotish shadbala --date .. --time .. --place .. --json` (compare planets inside one chart; not exact values)
 - Events of a day (Purnima/Amavasya time, Sankranti, retrograde turns, full tithi/nakshatra/yoga timeline): `python3 -m jyotish day --date YYYY-MM-DD --place <city> --json`
 - Cities: `python3 -m jyotish places`. Any other place: the name is looked up online; if that fails give `--lat <deg> --lon <deg east-positive>` yourself (from your knowledge or a web search) - the time zone is found automatically offline (`--tz` optional)
 

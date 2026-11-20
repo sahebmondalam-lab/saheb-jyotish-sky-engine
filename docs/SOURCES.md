@@ -36,3 +36,6 @@ traditional ideas, written for this project in English and Bengali.
 - panchangbodh.com: published Lahiri charts of Gandhi, Modi, Tagore.
 - Method sources: Dharmashastra rules as summarised by drikpanchang (vyapti of tithi in udaya, madhyahna, aparahna, pradosha, nishitha), Bhadra (Vishti) karana
   rule, Indian National Calendar (Calendar Reform Committee 1957), Bangla Academy revised calendar (1966/1987).
+- Eclipses: Meeus, Astronomical Algorithms (ch. 47 Moon, ch. 54 eclipse geometry ideas); Danjon rule for the Earth's shadow; reference list of 2017-2027 eclipses from the NASA/timeanddate catalogue.
+- Guna Milan tables: onlinejyotish.com, aaps.space (yoni matrix), dekhopanchang.com, hindutone, astromedha, muthu, vedtara, jagannathhora (see comments in jyotish/matching.py).
+- Shadbala: Brihat Parashara Hora Shastra ch. 27 (translation by R. Santhanam, as reproduced on barbarapijan.com), saravali.github.io (Ayana and Kala bala), dekhopanchang.com.

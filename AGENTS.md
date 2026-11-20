@@ -30,6 +30,9 @@ computer and paste the JSON back. **Never invent the numbers yourself.**
 | "What happened in the sky on <date>": Purnima/Amavasya moment, Sankranti, retrograde/direct turns, tithi/nakshatra/yoga start-end times | `python3 -m jyotish day --date YYYY-MM-DD --place <city> --json` |
 | Hindu date: lunar month (Adhika), paksha, tithi, Vikram/Shaka/Kali year, Samvatsara, Bengali/Tamil/Malayalam/Odia/National date, festivals of the day | `python3 -m jyotish calendar --date YYYY-MM-DD --place <city> --json` |
 | Festival dates of a year (Diwali, Holi, Durga Puja, Janmashtami, every Ekadashi, Purnima, Amavasya, Sankranti) | `python3 -m jyotish festivals --year YYYY --place <city> --json` |
+| Eclipses (Surya/Chandra Grahan): all of a year or the next ones, visible at a place or not | `python3 -m jyotish eclipses --year YYYY --place <city> --json` (or `--date YYYY-MM-DD --count 4`) |
+| Marriage matching: Ashtakoota Guna Milan (36) + Manglik | `python3 -m jyotish match --date1 .. --time1 .. --place1 .. --date2 .. --time2 .. --place2 .. --json` (person 1 = groom unless `--person1-is bride`) |
+| Planet strength (Shadbala, six-fold) | `python3 -m jyotish shadbala --date .. --time .. --place .. --json` (the kundli JSON/report already contains `shadbala` and `grahan`) |
 | Panchang, tithi, Rahu Kaal, muhurta for a day | `python3 -m jyotish panchang --date YYYY-MM-DD --place <city> --json` |
 | Which cities are built in | `python3 -m jyotish places` |
 

@@ -46,7 +46,12 @@ INSTRUCTIONS = (
     "(10) HINDU CALENDAR: for 'which Hindu month / paksha / tithi / Vikram or Shaka year / Bengali, Tamil, Malayalam date / which festival' "
     "call jyotish_hindu_calendar; for festival dates of a year (Diwali, Holi, Durga Puja days, Ekadashis...) call jyotish_festivals. "
     "Never recall festival dates from memory. The method is Drik (modern ephemeris); where the result lists alternative_dates, tell the "
-    "person that different almanacs (Smarta/Vaishnava, regional) may use that other day, and say which place the dates are for."
+    "person that different almanacs (Smarta/Vaishnava, regional) may use that other day, and say which place the dates are for. "
+    "(11) ECLIPSES: for any question about an eclipse (grahan), past or future, call jyotish_eclipses (a year, or the next ones); give a place to learn "
+    "whether it is visible there. Never recall eclipse dates from memory. KUNDLI MATCHING / marriage compatibility / Guna Milan / Manglik: call "
+    "jyotish_match with both people's date, time and place (person_a is the groom by default); say plainly it is a traditional belief system, "
+    "not a basis for a marriage decision, and that tables differ slightly between almanacs. PLANET STRENGTH: jyotish_kundli already contains "
+    "shadbala; jyotish_shadbala gives it alone. Its totals are for comparing planets within one chart, not exact values."
 )
 
 _PLACE_PROPS = {
@@ -97,6 +102,26 @@ TOOLS = [
          "birth": {"type": "string", "description": "Birth date, any common form, year 1-9999."},
          "on": {"type": "string", "description": "The other date (e.g. death date). Default today."},
          "calendar": _PLACE_PROPS["calendar"], **_FORMAT_PROPS}}},
+    {"name": "jyotish_eclipses",
+     "description": "Solar and lunar eclipses (Surya/Chandra Grahan): every eclipse of a year (year) or the next ones after a date (default today). Gives type (total/annular/partial/penumbral), greatest-eclipse time (UTC), Moon/Sun rashi and nakshatra; with a place also whether it is visible there. Use for 'is there an eclipse', 'next grahan', 'was there an eclipse on ...'.",
+     "inputSchema": {"type": "object", "properties": {
+         "year": {"type": "integer", "description": "List all eclipses of this year (1-9999)."},
+         "date": {"type": "string", "description": "Instead of year: list the eclipses after this date (default today)."},
+         "count": {"type": "integer", "description": "How many upcoming eclipses (default 4, max 40)."},
+         "kind": {"type": "string", "enum": ["solar", "lunar"]},
+         **_PLACE_PROPS, **_FORMAT_PROPS}}},
+    {"name": "jyotish_shadbala",
+     "description": "Shadbala: the classical six-fold strength (sthana, dig, kala, cheshta, naisargika, drik) of the seven planets for a birth chart, in rupas, compared with the minimum each planet needs. Needs the exact birth time and place. (jyotish_kundli already includes it.)",
+     "inputSchema": {"type": "object", "required": ["date", "time"], "properties": {
+         "date": {"type": "string", "description": "Birth date, any common form."}, "time": {"type": "string", "description": "Exact local birth time."},
+         "name": {"type": "string"}, **_PLACE_PROPS, **_FORMAT_PROPS}}},
+    {"name": "jyotish_match",
+     "description": "Kundli matching for marriage: Ashtakoota Guna Milan (36 points: varna, vashya, tara, yoni, graha maitri, gana, bhakoot, nadi) plus the Manglik (Kuja dosha) comparison for two people. Each person needs birth date, time and place; person_a is the groom by default (some kootas depend on roles). Say clearly that this is a traditional belief system and not a basis for a marriage decision.",
+     "inputSchema": {"type": "object", "required": ["person_a", "person_b"], "properties": {
+         "person_a": {"type": "object", "description": "{date, time, place | latitude+longitude, timezone (optional), name}"},
+         "person_b": {"type": "object", "description": "same fields as person_a"},
+         "a_role": {"type": "string", "enum": ["groom", "bride"], "description": "role of person_a (default groom)"},
+         "calendar": _PLACE_PROPS["calendar"], **_FORMAT_PROPS}}},
     {"name": "jyotish_places",
      "description": "List the built-in places with latitude, longitude and timezone.",
      "inputSchema": {"type": "object", "properties": {}}},
@@ -105,6 +130,13 @@ TOOLS = [
 
 def _place_args(a: Dict[str, Any]) -> Dict[str, Any]:
     return {"place": a.get("place"), "lat": a.get("latitude"), "lon": a.get("longitude"), "tz": a.get("timezone"), "calendar": a.get("calendar")}
+
+
+def _person_args(p: Any) -> Dict[str, Any]:
+    if not isinstance(p, dict):
+        raise ValueError("each person must be an object like {date, time, place}")
+    return {"date": p.get("date"), "time": p.get("time"), "name": p.get("name", ""), "place": p.get("place"),
+            "lat": p.get("latitude", p.get("lat")), "lon": p.get("longitude", p.get("lon")), "tz": p.get("timezone", p.get("tz"))}
 
 
 def call_tool(name: str, a: Dict[str, Any]) -> str:
@@ -118,6 +150,26 @@ def call_tool(name: str, a: Dict[str, Any]) -> str:
         if fmt == "text":
             return api.report("panchang", lang, date=a.get("date"), **place)
         return json.dumps(api.panchang(a.get("date"), **place), ensure_ascii=False, indent=1)
+    if name == "jyotish_eclipses":
+        has_place = any(a.get(k) is not None for k in ("place", "latitude", "longitude"))
+        if fmt == "text":
+            return api.report("eclipses", lang, year=a.get("year"), date=a.get("date"), count=int(a.get("count", 4)), ecl_kind=a.get("kind"),
+                              **({**place} if has_place else {"calendar": a.get("calendar")}))
+        return json.dumps(api.eclipses(a.get("year"), a.get("date"), int(a.get("count", 4)), a.get("kind"), **place) if has_place
+                          else api.eclipses(a.get("year"), a.get("date"), int(a.get("count", 4)), a.get("kind")), ensure_ascii=False, indent=1)
+    if name == "jyotish_shadbala":
+        if "date" not in a or "time" not in a:
+            raise ValueError("date and time are required")
+        if fmt == "text":
+            return api.report("shadbala", lang, date=a["date"], time=a["time"], name=a.get("name", ""), **place)
+        return json.dumps(api.shadbala(a["date"], a["time"], name=a.get("name", ""), **place), ensure_ascii=False, indent=1)
+    if name == "jyotish_match":
+        if "person_a" not in a or "person_b" not in a:
+            raise ValueError("person_a and person_b are required (each with date, time and place)")
+        pa, pb = _person_args(a["person_a"]), _person_args(a["person_b"])
+        if fmt == "text":
+            return api.report("guna_milan", lang, person_a=pa, person_b=pb, a_role=a.get("a_role", "groom"), calendar=a.get("calendar"))
+        return json.dumps(api.guna_milan(pa, pb, a.get("a_role", "groom"), a.get("calendar")), ensure_ascii=False, indent=1)
     if name == "jyotish_hindu_calendar":
         if fmt == "text":
             return api.report("calendar", lang, date=a.get("date"), **place)

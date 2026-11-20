@@ -47,6 +47,13 @@ python3 -m jyotish panchang --date 2026-11-16 --place kolkata --lang en
 # Hindu calendar of a day (lunar month, Adhika, Vikram/Shaka, Bengali/Tamil/Malayalam dates, festivals) and festival list of a year
 python3 -m jyotish calendar --date 2026-11-08 --place delhi --lang en
 python3 -m jyotish festivals --year 2026 --place delhi --lang en
+
+# Eclipses (grahan): a whole year, or the next ones; with a place it says whether each is visible there
+python3 -m jyotish eclipses --year 2026 --place kolkata --lang en
+# Kundli matching: Ashtakoota Guna Milan (36 points) + Manglik for two people
+python3 -m jyotish match --date1 1992-01-27 --time1 14:30 --place1 kolkata --date2 1994-08-15 --time2 09:10 --place2 delhi --lang en
+# Shadbala (six-fold planetary strength; also inside every kundli that has a birth time)
+python3 -m jyotish shadbala --date 2017-05-25 --time 07:00 --place kolkata --lang en
 # everything that happens in the sky on one day: Purnima/Amavasya moments, Sankranti, retrograde turns, tithi/nakshatra/yoga timeline
 python3 -m jyotish day --date 1992-01-27 --place kolkata --lang all
 # full janma kundli: North/South Indian charts, Navamsa, 16 divisional charts, Ashtakavarga, karakas, dasha, yogas, remedies
